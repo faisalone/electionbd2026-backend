@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class News extends Model
 {
     protected $fillable = [
         'title',
+    'uid',
         'summary',
         'content',
         'image',
@@ -37,5 +39,32 @@ class News extends Model
     public function scopeByCategory($query, $category)
     {
         return $query->where('category', $category);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->uid)) {
+                $model->uid = static::generateUid();
+            }
+        });
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'uid';
+    }
+
+    protected static function generateUid(int $length = 10): string
+    {
+        $alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        do {
+            $uid = '';
+            for ($i = 0; $i < $length; $i++) {
+                $uid .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+            }
+        } while (static::where('uid', $uid)->exists());
+        return $uid;
     }
 }

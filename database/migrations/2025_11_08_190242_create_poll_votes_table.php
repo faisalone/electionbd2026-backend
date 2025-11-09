@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('poll_option_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('phone_number'); // WhatsApp number
+            $table->boolean('is_winner')->default(false); // Indicates if this vote is a winner
             $table->timestamps();
 
             // Ensure one vote per phone number per poll

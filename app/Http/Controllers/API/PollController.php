@@ -22,12 +22,44 @@ class PollController extends Controller
 
     /**
      * Display a listing of all polls (both active and ended).
+     * Returns only 2 polls: latest active and latest ended.
      */
     public function index()
     {
-        $polls = Poll::with(['options', 'user'])
+        $now = now();
+        
+        // Get the latest active poll (end_date > now)
+        $activePoll = Poll::with(['options', 'user'])
+            ->where('end_date', '>', $now)
             ->latest()
-            ->get();
+            ->first();
+        
+        // Get the latest ended poll (end_date <= now)
+        $endedPoll = Poll::with(['options', 'user'])
+            ->where('end_date', '<=', $now)
+            ->latest()
+            ->first();
+        
+        // Combine both polls
+        $polls = collect([$activePoll, $endedPoll])->filter()->values();
+
+        // Add winner information for ended polls
+        $polls = $polls->map(function ($poll) use ($now) {
+            $pollData = $poll->toArray();
+            
+            // Add winner if poll has ended
+            if ($poll->end_date <= $now && $poll->hasWinner()) {
+                $winnerVote = $poll->getWinner();
+                $pollData['winner'] = [
+                    'phone_number' => $winnerVote->phone_number,
+                    'voted_at' => $winnerVote->created_at->toISOString(),
+                ];
+            } else {
+                $pollData['winner'] = null;
+            }
+            
+            return $pollData;
+        });
 
         return response()->json([
             'success' => true,
@@ -38,18 +70,26 @@ class PollController extends Controller
     /**
      * Display the specified poll with options and vote counts.
      */
-    public function show(string $id)
+    public function show(Poll $poll)
     {
-        $poll = Poll::with(['options.pollVotes', 'user'])
-            ->withCount('votes')
-            ->findOrFail($id);
+        $poll = $poll->load(['options.pollVotes', 'user'])->loadCount('votes');
 
-        // Vote counts are now automatically available via accessor
-        // No need to manually add them
+        // Add winner information if poll has ended
+        $winner = null;
+        if ($poll->hasEnded() && $poll->hasWinner()) {
+            $winnerVote = $poll->getWinner();
+            $winner = [
+                'phone_number' => $winnerVote->phone_number,
+                'voted_at' => $winnerVote->created_at->toISOString(),
+            ];
+        }
+
+        $pollData = $poll->toArray();
+        $pollData['winner'] = $winner;
 
         return response()->json([
             'success' => true,
-            'data' => $poll,
+            'data' => $pollData,
         ]);
     }
 
@@ -86,7 +126,7 @@ class PollController extends Controller
         }
 
         try {
-            // Get or create user, update name if user exists
+            // Get or create user
             $user = \App\Models\User::updateOrCreate(
                 ['phone_number' => $request->phone_number],
                 ['name' => $request->creator_name ?? 'Anonymous']
@@ -94,7 +134,6 @@ class PollController extends Controller
 
             $poll = $this->pollService->createPoll([
                 'question' => $request->question,
-                'creator_name' => $request->creator_name,
                 'end_date' => $request->end_date,
                 'options' => $request->options,
             ], $user);
@@ -115,7 +154,7 @@ class PollController extends Controller
     /**
      * Vote on a poll (requires OTP verification).
      */
-    public function vote(Request $request, string $pollId)
+    public function vote(Request $request, Poll $poll)
     {
         $validator = Validator::make($request->all(), [
             'option_id' => 'required|exists:poll_options,id',
@@ -131,10 +170,8 @@ class PollController extends Controller
             ], 422);
         }
 
-        $poll = Poll::findOrFail($pollId);
-
-        // Verify OTP
-        if (!$this->otpService->verify($request->phone_number, $request->otp_code, 'poll_vote', (int)$pollId)) {
+    // Verify OTP
+    if (!$this->otpService->verify($request->phone_number, $request->otp_code, 'poll_vote', (int)$poll->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired OTP code',
@@ -142,7 +179,7 @@ class PollController extends Controller
         }
 
         // Check if poll is still active
-        if ($poll->hasEnded()) {
+    if ($poll->hasEnded()) {
             return response()->json([
                 'success' => false,
                 'message' => 'This poll has ended',
@@ -243,6 +280,67 @@ class PollController extends Controller
             'success' => $isValid,
             'message' => $isValid ? 'OTP verified successfully' : 'Invalid or expired OTP',
         ], $isValid ? 200 : 401);
+    }
+
+    /**
+     * Get winner ranking - Shows the single winner and list of all voters who voted for the winning option
+     */
+    public function getWinnerRanking(Poll $poll)
+    {
+        if (now()->lt($poll->end_date)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Poll has not ended yet',
+            ], 400);
+        }
+
+        // Find the winning option (option with most votes)
+        $winningOption = $poll->options()
+            ->withCount('pollVotes')
+            ->orderBy('poll_votes_count', 'desc')
+            ->first();
+
+        if (!$winningOption) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No votes found',
+            ], 404);
+        }
+
+        // Get the single winner (is_winner = true)
+        $singleWinner = $poll->votes()
+            ->where('is_winner', true)
+            ->first();
+
+        // Get all voters who voted for the winning option, ordered by vote time
+        $winningOptionVoters = $winningOption->pollVotes()
+            ->with('user')
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function ($vote, $index) {
+                return [
+                    'phone_number' => $vote->phone_number,
+                    'voted_at' => $vote->created_at->toISOString(),
+                    'rank' => $index + 1,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'winner' => $singleWinner ? [
+                    'phone_number' => $singleWinner->phone_number,
+                    'voted_at' => $singleWinner->created_at->toISOString(),
+                ] : null,
+                'winning_option' => [
+                    'id' => $winningOption->id,
+                    'text' => $winningOption->text,
+                    'color' => $winningOption->color,
+                    'votes' => $winningOption->poll_votes_count,
+                ],
+                'winning_option_voters' => $winningOptionVoters,
+            ],
+        ]);
     }
 
     /**

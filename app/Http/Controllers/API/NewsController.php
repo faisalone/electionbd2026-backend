@@ -43,9 +43,8 @@ class NewsController extends Controller
     /**
      * Display the specified news article.
      */
-    public function show(string $id)
+    public function show(News $news)
     {
-        $news = News::findOrFail($id);
 
         return response()->json([
             'success' => true,

@@ -36,13 +36,14 @@ Route::prefix('v1')->group(function () {
     
     // News Routes
     Route::get('news', [NewsController::class, 'index']);
-    Route::get('news/{id}', [NewsController::class, 'show']);
+    Route::get('news/{news}', [NewsController::class, 'show']);
     
     // Poll Routes
     Route::get('polls', [PollController::class, 'index']);
     Route::get('polls/{poll}', [PollController::class, 'show']);
     Route::post('polls', [PollController::class, 'store']);
     Route::post('polls/{poll}/vote', [PollController::class, 'vote']);
+    Route::get('polls/{poll}/winners', [PollController::class, 'getWinnerRanking']);
     
     // OTP Routes
     Route::post('otp/send', [PollController::class, 'sendOTP']);

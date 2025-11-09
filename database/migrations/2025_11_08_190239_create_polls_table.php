@@ -13,14 +13,12 @@ return new class extends Migration
     {
         Schema::create('polls', function (Blueprint $table) {
             $table->id();
+            $table->string('uid', 16)->unique()->nullable();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Creator
             $table->text('question'); // Poll question
-            $table->string('creator_name'); // Name of creator
             $table->dateTime('end_date'); // Poll end date and time
             $table->enum('status', ['active', 'ended'])->default('active');
             // total_votes removed - calculated dynamically from poll_votes relationship
-            $table->string('winner_phone')->nullable(); // Selected winner's phone
-            $table->dateTime('winner_selected_at')->nullable();
             $table->timestamps();
         });
     }

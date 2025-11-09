@@ -12,6 +12,11 @@ class PollVote extends Model
         'poll_option_id',
         'user_id',
         'phone_number',
+        'is_winner',
+    ];
+
+    protected $casts = [
+        'is_winner' => 'boolean',
     ];
 
     public function poll(): BelongsTo

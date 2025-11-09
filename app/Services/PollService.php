@@ -6,6 +6,7 @@ use App\Models\Poll;
 use App\Models\PollOption;
 use App\Models\PollVote;
 use App\Models\User;
+use App\Events\VoteCast;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,10 +30,9 @@ class PollService
             $poll = Poll::create([
                 'user_id' => $user->id,
                 'question' => $data['question'],
-                'creator_name' => $data['creator_name'] ?? $user->name,
                 'end_date' => Carbon::parse($data['end_date']),
                 'status' => 'active',
-                // total_votes removed - calculated dynamically
+                // uid auto-generated in model boot
             ]);
 
             // Create options (max 5)
@@ -89,6 +89,9 @@ class PollService
 
             // Vote counts now calculated dynamically from poll_votes table
             // No need to increment counters
+
+            // Broadcast the vote event
+            broadcast(new VoteCast($poll, $option->id))->toOthers();
 
             return true;
         });

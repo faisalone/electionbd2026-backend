@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('news', function (Blueprint $table) {
             $table->id();
+            $table->string('uid', 16)->unique()->nullable();
             $table->string('title'); // Bengali title
             $table->text('summary'); // Short summary
             $table->longText('content'); // Full content

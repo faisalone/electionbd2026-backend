@@ -15,7 +15,7 @@ class PollOption extends Model
         // votes removed - use vote_count or pollVotes()->count()
     ];
 
-    protected $appends = ['vote_count']; // Add as computed attribute
+    protected $appends = ['vote_count', 'votes']; // Add as computed attributes
 
     public function poll(): BelongsTo
     {
@@ -33,5 +33,13 @@ class PollOption extends Model
     public function getVoteCountAttribute(): int
     {
         return $this->pollVotes()->count();
+    }
+
+    /**
+     * Alias for vote_count for frontend compatibility
+     */
+    public function getVotesAttribute(): int
+    {
+        return $this->vote_count;
     }
 }

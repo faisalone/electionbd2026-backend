@@ -27,9 +27,9 @@ class PollSeeder extends Seeder
         $poll1 = Poll::create([
             'user_id' => $user->id,
             'question' => 'আগামী নির্বাচনে কোন দল জিতবে বলে আপনি মনে করেন?',
-            'creator_name' => 'নির্বাচন পোল',
             'end_date' => Carbon::now()->addDays(15),
             'status' => 'active',
+            // uid auto-generated
         ]);
 
         $poll1Options = [
@@ -63,9 +63,9 @@ class PollSeeder extends Seeder
         $poll2 = Poll::create([
             'user_id' => $user->id,
             'question' => 'নির্বাচনে আপনার কাছে সবচেয়ে গুরুত্বপূর্ণ বিষয় কোনটি?',
-            'creator_name' => 'জনমত সমীক্ষা',
             'end_date' => Carbon::now()->addDays(10),
             'status' => 'active',
+            // uid auto-generated
         ]);
 
         $poll2Options = [
@@ -97,9 +97,9 @@ class PollSeeder extends Seeder
         $poll3 = Poll::create([
             'user_id' => $user->id,
             'question' => 'এবারের নির্বাচনে ভোটার উপস্থিতি কেমন হবে?',
-            'creator_name' => 'নির্বাচন বিশ্লেষক',
             'end_date' => Carbon::now()->addDays(20),
             'status' => 'active',
+            // uid auto-generated
         ]);
 
         $poll3Options = [
@@ -131,11 +131,9 @@ class PollSeeder extends Seeder
         $poll4 = Poll::create([
             'user_id' => $user->id,
             'question' => 'আগের নির্বাচনে কোন দল জিতেছিল? (পরীক্ষা পোল)',
-            'creator_name' => 'পরীক্ষা',
             'end_date' => Carbon::now()->subDays(2), // Already ended
             'status' => 'ended',
-            'winner_phone' => '+8801712345678',
-            'winner_selected_at' => Carbon::now()->subDays(2),
+            // uid auto-generated
         ]);
 
         $poll4Options = [
@@ -143,6 +141,7 @@ class PollSeeder extends Seeder
             ['text' => 'বিএনপি', 'color' => '#00A651'],
         ];
 
+        $winningOptionVotes = []; // Track votes for winning option
         foreach ($poll4Options as $index => $optionData) {
             $option = PollOption::create([
                 'poll_id' => $poll4->id,
@@ -150,16 +149,30 @@ class PollSeeder extends Seeder
                 'color' => $optionData['color'],
             ]);
 
-            // First option gets more votes (winner)
+            // First option gets more votes (winning option)
             $voteCount = $index === 0 ? rand(30, 40) : rand(10, 20);
+            
             for ($i = 0; $i < $voteCount; $i++) {
-                PollVote::create([
+                $vote = PollVote::create([
                     'poll_id' => $poll4->id,
                     'poll_option_id' => $option->id,
                     'user_id' => $user->id,
                     'phone_number' => '+880171' . rand(1000000, 9999999),
+                    'is_winner' => false, // All start as false
                 ]);
+                
+                // Store votes for the winning option (first option)
+                if ($index === 0) {
+                    $winningOptionVotes[] = $vote;
+                }
             }
+        }
+        
+        // Randomly select ONE winner from the winning option voters
+        if (count($winningOptionVotes) > 0) {
+            $randomWinner = $winningOptionVotes[array_rand($winningOptionVotes)];
+            $randomWinner->is_winner = true;
+            $randomWinner->save();
         }
 
         $this->command->info('Polls seeded successfully with vote counts!');
