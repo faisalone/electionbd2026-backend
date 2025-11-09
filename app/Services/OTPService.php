@@ -28,7 +28,7 @@ class OTPService
             ->where('is_verified', false)
             ->update(['is_verified' => true]); // Mark as used to prevent reuse
 
-        // Generate OTP code (4 digits in Bengali)
+        // Generate OTP code (6 digits numeric for WhatsApp template compatibility)
         $otpCode = $this->generateOTPCode();
 
         // Create OTP record
@@ -41,7 +41,7 @@ class OTPService
             'expires_at' => Carbon::now()->addMinutes(5),
         ]);
 
-        // Send OTP via WhatsApp
+        // Send OTP via WhatsApp (numeric format required for template)
         $sent = $this->whatsappService->sendOTP($phoneNumber, $otpCode, $purpose);
 
         if (!$sent) {
@@ -82,10 +82,13 @@ class OTPService
     /**
      * Generate 4-digit OTP code in Bengali
      */
+    /**
+     * Generate numeric OTP code (4 digits)
+     */
     private function generateOTPCode(): string
     {
-        $code = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
-        return $this->toBengaliNumber($code);
+        // Generate 4-digit numeric code (compatible with WhatsApp template)
+        return str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
     }
 
     /**

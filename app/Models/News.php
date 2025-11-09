@@ -21,6 +21,14 @@ class News extends Model
         'is_ai_generated' => 'boolean',
     ];
 
+    /**
+     * Get the image URL with fallback to placeholder.
+     */
+    public function getImageAttribute($value): string
+    {
+        return $value ?? '/news-placeholder.svg';
+    }
+
     public function scopeAiGenerated($query)
     {
         return $query->where('is_ai_generated', true);

@@ -13,35 +13,62 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->apiUrl = 'https://graph.facebook.com/v18.0/';
+        $this->apiUrl = 'https://graph.facebook.com/v24.0/';
         $this->phoneNumberId = config('services.whatsapp.phone_number_id');
         $this->accessToken = config('services.whatsapp.access_token');
     }
 
     /**
-     * Send OTP via WhatsApp
+     * Send OTP via WhatsApp using authentication template
+     * Template: verification_code (APPROVED)
+     * Format: *{{1}}* is your verification code.
+     * Includes: Copy code button (autofill)
      */
     public function sendOTP(string $phoneNumber, string $otp, string $purpose = 'verification')
     {
         try {
-            $message = $this->getOTPMessage($otp, $purpose);
-            
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->accessToken,
                 'Content-Type' => 'application/json',
             ])->post("{$this->apiUrl}{$this->phoneNumberId}/messages", [
                 'messaging_product' => 'whatsapp',
                 'to' => $this->formatPhoneNumber($phoneNumber),
-                'type' => 'text',
-                'text' => [
-                    'body' => $message
+                'type' => 'template',
+                'template' => [
+                    'name' => 'verification_code',
+                    'language' => [
+                        'code' => 'en_US'
+                    ],
+                    'components' => [
+                        [
+                            'type' => 'body',
+                            'parameters' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $otp
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'sub_type' => 'url',
+                            'index' => 0,
+                            'parameters' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $otp
+                                ]
+                            ]
+                        ]
+                    ]
                 ]
             ]);
 
             if ($response->successful()) {
                 Log::info('WhatsApp OTP sent successfully', [
                     'phone' => $phoneNumber,
-                    'purpose' => $purpose
+                    'purpose' => $purpose,
+                    'message_id' => $response->json()['messages'][0]['id'] ?? null
                 ]);
                 return true;
             }
@@ -59,20 +86,6 @@ class WhatsAppService
             ]);
             return false;
         }
-    }
-
-    /**
-     * Generate OTP message based on purpose
-     */
-    private function getOTPMessage(string $otp, string $purpose): string
-    {
-        $messages = [
-            'poll_create' => "🗳️ নির্বাচন বিডি ২০২৬\n\nআপনার জরিপ তৈরির OTP: {$otp}\n\nএই কোডটি ৫ মিনিটের জন্য বৈধ।\n\n⚠️ এই কোডটি কাউকে শেয়ার করবেন না।",
-            'poll_vote' => "🗳️ নির্বাচন বিডি ২০২৬\n\nআপনার ভোটের OTP: {$otp}\n\nএই কোডটি ৫ মিনিটের জন্য বৈধ।\n\n⚠️ এই কোডটি কাউকে শেয়ার করবেন না।",
-            'default' => "🗳️ নির্বাচন বিডি ২০২৬\n\nআপনার যাচাইকরণ কোড: {$otp}\n\nএই কোডটি ৫ মিনিটের জন্য বৈধ।"
-        ];
-
-        return $messages[$purpose] ?? $messages['default'];
     }
 
     /**
@@ -103,20 +116,30 @@ class WhatsAppService
     {
         try {
             $message = $isWinner 
-                ? "🎉 অভিনন্দন!\n\nআপনি \"{$pollQuestion}\" জরিপের বিজয়ী নির্বাচিত হয়েছেন!\n\nআমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।\n\n✨ নির্বাচন বিডি ২০২৬"
-                : "📊 জরিপ সমাপ্ত\n\n\"{$pollQuestion}\" জরিপটি সমাপ্ত হয়েছে।\n\nআপনার অংশগ্রহণের জন্য ধন্যবাদ!\n\n🗳️ নির্বাচন বিডি ২০২৬";
+                ? "🎉 *অভিনন্দন!*\n\nআপনি \"{$pollQuestion}\" জরিপের বিজয়ী নির্বাচিত হয়েছেন!\n\nআমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।\n\n✨ নির্বাচন বিডি ২০২৬"
+                : "📊 *জরিপ সমাপ্ত*\n\n\"{$pollQuestion}\" জরিপটি সমাপ্ত হয়েছে।\n\nআপনার অংশগ্রহণের জন্য ধন্যবাদ!\n\n🗳️ নির্বাচন বিডি ২০২৬";
 
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->accessToken,
                 'Content-Type' => 'application/json',
             ])->post("{$this->apiUrl}{$this->phoneNumberId}/messages", [
                 'messaging_product' => 'whatsapp',
+                'recipient_type' => 'individual',
                 'to' => $this->formatPhoneNumber($phoneNumber),
                 'type' => 'text',
                 'text' => [
+                    'preview_url' => false,
                     'body' => $message
                 ]
             ]);
+
+            if ($response->successful()) {
+                Log::info('WhatsApp poll notification sent', [
+                    'phone' => $phoneNumber,
+                    'is_winner' => $isWinner,
+                    'message_id' => $response->json()['messages'][0]['id'] ?? null
+                ]);
+            }
 
             return $response->successful();
         } catch (\Exception $e) {

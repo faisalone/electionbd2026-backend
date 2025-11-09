@@ -21,12 +21,11 @@ class PollController extends Controller
     }
 
     /**
-     * Display a listing of active polls.
+     * Display a listing of all polls (both active and ended).
      */
     public function index()
     {
         $polls = Poll::with(['options', 'user'])
-            ->where('end_date', '>', now())
             ->latest()
             ->get();
 
@@ -87,8 +86,8 @@ class PollController extends Controller
         }
 
         try {
-            // Get or create user
-            $user = \App\Models\User::firstOrCreate(
+            // Get or create user, update name if user exists
+            $user = \App\Models\User::updateOrCreate(
                 ['phone_number' => $request->phone_number],
                 ['name' => $request->creator_name ?? 'Anonymous']
             );
