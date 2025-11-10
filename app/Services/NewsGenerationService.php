@@ -211,17 +211,19 @@ class NewsGenerationService
         }
 
         try {
-            // Build query with additional filters to focus on Bangladesh news
-            $enhancedQuery = $query . ' bangladesh বাংলাদেশ -india -ভারত -book -বই';
+            // Focus query on Bangladesh political news only
+            $enhancedQuery = "বাংলাদেশ {$query}";
             
             $response = Http::timeout(30)->get('https://www.googleapis.com/customsearch/v1', [
                 'key' => $apiKey,
                 'cx' => $searchEngineId,
                 'q' => $enhancedQuery,
                 'num' => min($maxResults, 10),
-                'lr' => 'lang_bn|lang_en',
+                'lr' => 'lang_bn', // Only Bengali language
                 'dateRestrict' => 'd1', // Last 24 hours
                 'sort' => 'date:d:s', // Sort by date, descending (newest first)
+                'fileType' => '', // No specific file type
+                'safe' => 'off', // Include all results
             ]);
 
             if (!$response->successful()) {
@@ -237,20 +239,19 @@ class NewsGenerationService
 
             return collect($items)
                 ->filter(function ($item) {
-                    // Filter out Indian domains and topics
                     $link = strtolower($item['link'] ?? '');
                     $title = strtolower($item['title'] ?? '');
                     $snippet = strtolower($item['snippet'] ?? '');
                     $source = strtolower($item['displayLink'] ?? '');
                     
-                    // Whitelist of Bangladesh news domains
+                    // STRICT: Only accept these Bangladesh news domains
                     $bdNewsDomains = [
                         'prothomalo.com', 'bdnews24.com', 'thedailystar.net', 'dhakatribune.com',
                         'banglanews24.com', 'jagonews24.com', 'samakal.com', 'kalerkantho.com',
                         'ittefaq.com.bd', 'jugantor.com', 'newagebd.net', 'tbsnews.net',
                         'risingbd.com', 'barta24.com', 'bd-pratidin.com', 'banglatribune.com',
                         'mzamin.com', 'manabzamin.com', 'ntvbd.com', 'channeli.tv',
-                        'somoynews.tv', 'jamuna.tv'
+                        'somoynews.tv', 'jamuna.tv', 'bonikbarta.net', 'deshrupantor.com'
                     ];
                     
                     $isValidNewsSite = false;
@@ -261,65 +262,54 @@ class NewsGenerationService
                         }
                     }
                     
-                    // If not from a whitelisted news site, filter out
                     if (!$isValidNewsSite) {
-                        Log::info('Filtered non-whitelisted source', ['source' => $item['displayLink'] ?? '']);
+                        Log::info('Filtered non-BD news site', ['source' => $source]);
                         return false;
                     }
                     
-                    // Filter out non-news sites (books, shopping, etc.)
-                    $nonNewsSites = ['rokomari.com', 'rokomari', 'amazon', 'flipkart', 'daraz', 'alibaba', 'bookshop'];
-                    foreach ($nonNewsSites as $site) {
-                        if (str_contains($link, $site) || str_contains($source, $site)) {
-                            Log::info('Filtered non-news site', ['source' => $item['displayLink'] ?? '']);
+                    // Must contain Bangladesh-related keywords
+                    $bdKeywords = ['বাংলাদেশ', 'ঢাকা', 'dhaka', 'bangladesh', 'চট্টগ্রাম', 'বাংলা'];
+                    $hasBdKeyword = false;
+                    foreach ($bdKeywords as $keyword) {
+                        if (str_contains($title, $keyword) || str_contains($snippet, $keyword)) {
+                            $hasBdKeyword = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$hasBdKeyword) {
+                        Log::info('Filtered non-BD topic', ['title' => $item['title'] ?? '']);
+                        return false;
+                    }
+                    
+                    // Exclude BBC and other international news about elections
+                    $excludeKeywords = ['bbc', 'বিবিসি', 'cnn', 'reuters', 'uk election', 'us election', 'america'];
+                    foreach ($excludeKeywords as $exclude) {
+                        if (str_contains($title, $exclude) || str_contains($snippet, $exclude)) {
+                            Log::info('Filtered international news', ['title' => $item['title'] ?? '']);
                             return false;
                         }
                     }
                     
-                    // Filter out book-related content
-                    $bookKeywords = ['বই', 'book', 'রকমারি', 'rokomari', 'মুফতী', 'mufti', 'লেখক', 'author'];
-                    $bookMatchCount = 0;
-                    foreach ($bookKeywords as $keyword) {
-                        if (str_contains($title, $keyword) || str_contains($snippet, $keyword)) {
-                            $bookMatchCount++;
+                    // Exclude shopping/book sites
+                    $excludeSites = ['rokomari', 'amazon', 'daraz', 'alibaba', 'bookshop', 'ecs.gov.bd'];
+                    foreach ($excludeSites as $site) {
+                        if (str_contains($link, $site) || str_contains($source, $site)) {
+                            Log::info('Filtered shopping site', ['source' => $source]);
+                            return false;
                         }
                     }
-                    // If multiple book keywords found, likely a book listing
-                    if ($bookMatchCount >= 2) {
+                    
+                    // Exclude book content
+                    if (str_contains($title, 'বই') && str_contains($title, 'রকমারি')) {
                         Log::info('Filtered book content', ['title' => $item['title'] ?? '']);
                         return false;
                     }
                     
-                    // Indian domain filters
-                    $indianDomains = ['.in', 'india', 'indian', 'hindi', 'mumbai', 'delhi', 'kolkata', 'bengaluru', 'chennai'];
-                    foreach ($indianDomains as $domain) {
-                        if (str_contains($link, $domain) || str_contains($source, $domain)) {
-                            Log::info('Filtered Indian source', ['source' => $item['displayLink'] ?? '']);
-                            return false;
-                        }
-                    }
-                    
-                    // Indian topic filters (in both Bengali and English)
-                    $indianTopics = [
-                        'ভারত', 'india', 'পশ্চিমবঙ্গ', 'west bengal', 'নদীয়া', 'nadia', 
-                        'বাঁকুড়া', 'bankura', 'বিধানসভা', 'assembly', 'রানীবাঁধ', 'ranibandh',
-                        'কলকাতা', 'kolkata', 'মুম্বাই', 'mumbai', 'দিল্লি', 'delhi'
-                    ];
-                    
-                    foreach ($indianTopics as $topic) {
-                        if (str_contains($title, $topic) || str_contains($snippet, $topic)) {
-                            Log::info('Filtered Indian topic', ['title' => $item['title'] ?? '']);
-                            return false;
-                        }
-                    }
-                    
-                    // Filter out small snippets (less than 100 characters indicates small source)
+                    // Must have substantial content
                     $snippetLength = mb_strlen($item['snippet'] ?? '', 'UTF-8');
-                    if ($snippetLength < 100) {
-                        Log::info('Filtered small source', [
-                            'source' => $item['displayLink'] ?? '',
-                            'snippet_length' => $snippetLength
-                        ]);
+                    if ($snippetLength < 80) {
+                        Log::info('Filtered short content', ['length' => $snippetLength]);
                         return false;
                     }
                     
