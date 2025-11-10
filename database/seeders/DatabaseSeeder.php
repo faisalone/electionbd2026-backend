@@ -21,9 +21,10 @@ class DatabaseSeeder extends Seeder
             SeatSeeder::class,
             PartySeeder::class,
             SymbolSeeder::class,
+            CandidateSeeder::class, // Added candidate seeder
             TimelineEventSeeder::class,
             PollSeeder::class,
-            NewsSeeder::class, // Added news seeder
+            NewsSeeder::class,
         ]);
 
         $this->command->info('Database seeded successfully!');

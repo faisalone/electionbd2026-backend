@@ -25,7 +25,7 @@ class SeatController extends Controller
             });
         }
 
-        $seats = $query->orderBy('seat_number')->get();
+        $seats = $query->orderBy('name_en')->get();
 
         return response()->json([
             'success' => true,
