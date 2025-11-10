@@ -306,18 +306,20 @@ class NewsGenerationService
                         return false;
                     }
                     
-                    // Must have substantial content (minimum 200 characters for real news)
+                    // Must have substantial content (minimum 100 characters - more realistic)
                     $snippetLength = mb_strlen($item['snippet'] ?? '', 'UTF-8');
-                    if ($snippetLength < 200) {
+                    if ($snippetLength < 100) {
                         Log::info('Filtered short content', ['length' => $snippetLength, 'title' => $item['title'] ?? '']);
                         return false;
                     }
                     
-                    // Must contain actionable news keywords (actual events happening)
+                    // Prefer sources with news event keywords, but don't require them
+                    // (Some legitimate news may not have these in the snippet)
                     $newsEventKeywords = [
                         'বলেছেন', 'জানিয়েছেন', 'ঘোষণা', 'অনুষ্ঠিত', 'সভা', 'মিছিল', 'সমাবেশ',
                         'গ্রেপ্তার', 'মামলা', 'আদালত', 'রায়', 'প্রতিবাদ', 'দাবি', 'চুক্তি',
-                        'announced', 'declared', 'arrested', 'court', 'protest', 'meeting', 'rally'
+                        'নির্বাচন', 'ভোট', 'রাজনীতি', 'দল', 'নেতা', 'সরকার', 'বিরোধী',
+                        'announced', 'declared', 'arrested', 'court', 'protest', 'meeting', 'rally', 'election', 'vote'
                     ];
                     
                     $hasNewsEvent = false;
@@ -328,9 +330,9 @@ class NewsGenerationService
                         }
                     }
                     
+                    // Log if no news event found (but don't filter out)
                     if (!$hasNewsEvent) {
-                        Log::info('Filtered non-event content', ['title' => $item['title'] ?? '']);
-                        return false;
+                        Log::info('Source without event keywords (still included)', ['title' => $item['title'] ?? '']);
                     }
                     
                     return true;
@@ -428,9 +430,9 @@ class NewsGenerationService
                 return null;
             }
 
-            // Validate article length (must have substantial content)
+            // Validate article length (must have substantial content - at least 500 chars)
             $contentLength = mb_strlen($article['content'], 'UTF-8');
-            if ($contentLength < 800) {
+            if ($contentLength < 500) {
                 Log::warning('Article too short, rejecting', [
                     'topic' => $topic,
                     'length' => $contentLength,
@@ -520,9 +522,9 @@ class NewsGenerationService
                 return null;
             }
 
-            // Validate article length (must have substantial content)
+            // Validate article length (must have substantial content - at least 500 chars)
             $contentLength = mb_strlen($article['content'], 'UTF-8');
-            if ($contentLength < 800) {
+            if ($contentLength < 500) {
                 Log::warning('Article too short, rejecting', [
                     'topic' => $topic,
                     'length' => $contentLength,
