@@ -232,14 +232,59 @@ class NewsGenerationService
             $data = $response->json();
             $items = $data['items'] ?? [];
 
-            return collect($items)->map(function ($item) {
-                return [
-                    'title' => $item['title'] ?? '',
-                    'link' => $item['link'] ?? '',
-                    'snippet' => $item['snippet'] ?? '',
-                    'source' => $item['displayLink'] ?? '',
-                ];
-            })->toArray();
+            return collect($items)
+                ->filter(function ($item) {
+                    // Filter out Indian domains and topics
+                    $link = strtolower($item['link'] ?? '');
+                    $title = strtolower($item['title'] ?? '');
+                    $snippet = strtolower($item['snippet'] ?? '');
+                    $source = strtolower($item['displayLink'] ?? '');
+                    
+                    // Indian domain filters
+                    $indianDomains = ['.in', 'india', 'indian', 'hindi', 'mumbai', 'delhi', 'kolkata', 'bengaluru', 'chennai'];
+                    foreach ($indianDomains as $domain) {
+                        if (str_contains($link, $domain) || str_contains($source, $domain)) {
+                            Log::info('Filtered Indian source', ['source' => $item['displayLink'] ?? '']);
+                            return false;
+                        }
+                    }
+                    
+                    // Indian topic filters (in both Bengali and English)
+                    $indianTopics = [
+                        'ভারত', 'india', 'পশ্চিমবঙ্গ', 'west bengal', 'নদীয়া', 'nadia', 
+                        'বাঁকুড়া', 'bankura', 'বিধানসভা', 'assembly', 'রানীবাঁধ', 'ranibandh',
+                        'কলকাতা', 'kolkata', 'মুম্বাই', 'mumbai', 'দিল্লি', 'delhi'
+                    ];
+                    
+                    foreach ($indianTopics as $topic) {
+                        if (str_contains($title, $topic) || str_contains($snippet, $topic)) {
+                            Log::info('Filtered Indian topic', ['title' => $item['title'] ?? '']);
+                            return false;
+                        }
+                    }
+                    
+                    // Filter out small snippets (less than 100 characters indicates small source)
+                    $snippetLength = mb_strlen($item['snippet'] ?? '', 'UTF-8');
+                    if ($snippetLength < 100) {
+                        Log::info('Filtered small source', [
+                            'source' => $item['displayLink'] ?? '',
+                            'snippet_length' => $snippetLength
+                        ]);
+                        return false;
+                    }
+                    
+                    return true;
+                })
+                ->map(function ($item) {
+                    return [
+                        'title' => $item['title'] ?? '',
+                        'link' => $item['link'] ?? '',
+                        'snippet' => $item['snippet'] ?? '',
+                        'source' => $item['displayLink'] ?? '',
+                    ];
+                })
+                ->values()
+                ->toArray();
 
         } catch (\Exception $e) {
             Log::error('Error fetching sources', [
