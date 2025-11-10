@@ -306,10 +306,30 @@ class NewsGenerationService
                         return false;
                     }
                     
-                    // Must have substantial content
+                    // Must have substantial content (minimum 200 characters for real news)
                     $snippetLength = mb_strlen($item['snippet'] ?? '', 'UTF-8');
-                    if ($snippetLength < 80) {
-                        Log::info('Filtered short content', ['length' => $snippetLength]);
+                    if ($snippetLength < 200) {
+                        Log::info('Filtered short content', ['length' => $snippetLength, 'title' => $item['title'] ?? '']);
+                        return false;
+                    }
+                    
+                    // Must contain actionable news keywords (actual events happening)
+                    $newsEventKeywords = [
+                        'বলেছেন', 'জানিয়েছেন', 'ঘোষণা', 'অনুষ্ঠিত', 'সভা', 'মিছিল', 'সমাবেশ',
+                        'গ্রেপ্তার', 'মামলা', 'আদালত', 'রায়', 'প্রতিবাদ', 'দাবি', 'চুক্তি',
+                        'announced', 'declared', 'arrested', 'court', 'protest', 'meeting', 'rally'
+                    ];
+                    
+                    $hasNewsEvent = false;
+                    foreach ($newsEventKeywords as $keyword) {
+                        if (str_contains($title, $keyword) || str_contains($snippet, $keyword)) {
+                            $hasNewsEvent = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$hasNewsEvent) {
+                        Log::info('Filtered non-event content', ['title' => $item['title'] ?? '']);
                         return false;
                     }
                     
@@ -408,6 +428,17 @@ class NewsGenerationService
                 return null;
             }
 
+            // Validate article length (must have substantial content)
+            $contentLength = mb_strlen($article['content'], 'UTF-8');
+            if ($contentLength < 800) {
+                Log::warning('Article too short, rejecting', [
+                    'topic' => $topic,
+                    'length' => $contentLength,
+                    'title' => $article['title'],
+                ]);
+                return null;
+            }
+
             $article['category'] = $category;
             $article['date'] = $this->getBengaliDate();
             $article['sources'] = $sources;
@@ -489,6 +520,17 @@ class NewsGenerationService
                 return null;
             }
 
+            // Validate article length (must have substantial content)
+            $contentLength = mb_strlen($article['content'], 'UTF-8');
+            if ($contentLength < 800) {
+                Log::warning('Article too short, rejecting', [
+                    'topic' => $topic,
+                    'length' => $contentLength,
+                    'title' => $article['title'],
+                ]);
+                return null;
+            }
+
             $article['category'] = $category;
             $article['date'] = $this->getBengaliDate();
             $article['sources'] = $sources;
@@ -527,22 +569,36 @@ class NewsGenerationService
     private function buildPrompt(string $topic, string $sourceContext): string
     {
         return <<<PROMPT
-আপনি একজন দক্ষ বাংলাদেশী সংবাদ লেখক। নিচের সংবাদ সূত্রগুলি পড়ে একটি নতুন, আকর্ষণীয় বাংলা সংবাদ নিবন্ধ লিখুন।
+আপনি একজন পেশাদার বাংলাদেশী সংবাদ প্রতিবেদক। নিচের সূত্রগুলি থেকে একটি বিস্তারিত, তথ্যবহুল সংবাদ প্রতিবেদন লিখুন।
 
-গুরুত্বপূর্ণ নির্দেশনা:
-- শুধুমাত্র নিচের সূত্রগুলিতে যেসব ঘটনা ঘটেছে তা লিখুন
-- ঘটনাগুলি নতুন ভাষায় পুনর্লিখন করুন
-- পেশাদার এবং আকর্ষণীয় করে লিখুন
+**অবশ্যই মেনে চলুন:**
+1. শুধুমাত্র বাস্তব ঘটনা লিখুন - কোনো কাল্পনিক তথ্য যোগ করবেন না
+2. নিবন্ধে অবশ্যই ৪-৬টি অনুচ্ছেদ থাকতে হবে
+3. প্রতিটি অনুচ্ছেদে ৩-৫ বাক্য থাকতে হবে
+4. সংবাদে অবশ্যই থাকতে হবে: কে, কী, কখন, কোথায়, কেন, কীভাবে
+5. সংখ্যা, নাম, স্থান, তারিখ উল্লেখ করুন
+6. সংবাদের প্রভাব ও প্রতিক্রিয়া বর্ণনা করুন
+7. পেশাদার সাংবাদিকতার ভাষা ব্যবহার করুন
+
+**এড়িয়ে চলুন:**
+- সাধারণ বর্ণনা বা ফিলার কন্টেন্ট
+- "নির্বাচন কমিশন কাজ করছে" এ ধরনের অস্পষ্ট বক্তব্য
+- ছোট বা অসম্পূর্ণ প্রতিবেদন
 
 সূত্রসমূহ:
 {$sourceContext}
 
 JSON ফরম্যাটে প্রদান করুন:
 {
-  "title": "বাংলা শিরোনাম",
-  "summary": "সংক্ষিপ্ত সারাংশ",
-  "content": "সম্পূর্ণ নিবন্ধ বিষয়বস্তু"
+  "title": "সংক্ষিপ্ত ও আকর্ষণীয় শিরোনাম (১০-১৫ শব্দ)",
+  "summary": "সংবাদের মূল ঘটনা সংক্ষেপে (৫০-৮০ শব্দ)",
+  "content": "বিস্তারিত সংবাদ প্রতিবেদন (৪০০-৬০০ শব্দ, ৪-৬ অনুচ্ছেদ)"
 }
+
+**content এ Markdown ফরম্যাট ব্যবহার করুন:**
+- শিরোনামের জন্য **bold**
+- গুরুত্বপূর্ণ তথ্যের জন্য **bold**
+- অনুচ্ছেদের মধ্যে ফাঁকা লাইন রাখুন
 PROMPT;
     }
 
