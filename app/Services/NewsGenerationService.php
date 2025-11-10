@@ -211,14 +211,34 @@ class NewsGenerationService
         }
 
         try {
+            // Build query with additional filters to focus on Bangladesh news
+            $enhancedQuery = $query . ' bangladesh OR বাংলাদেশ -india -ভারত';
+            
             $response = Http::timeout(30)->get('https://www.googleapis.com/customsearch/v1', [
                 'key' => $apiKey,
                 'cx' => $searchEngineId,
-                'q' => $query,
+                'q' => $enhancedQuery,
                 'num' => min($maxResults, 10),
                 'lr' => 'lang_bn|lang_en',
-                'dateRestrict' => 'd1', // Last 24 hours (API doesn't support 'h1' - will filter to 1 hour after scraping)
+                'dateRestrict' => 'd1', // Last 24 hours
                 'sort' => 'date:d:s', // Sort by date, descending (newest first)
+                'tbm' => 'nws', // Search only in news (same as &tbm=nws in Google)
+                'siteSearch' => implode(' OR ', [
+                    'prothomalo.com',
+                    'bdnews24.com',
+                    'thedailystar.net',
+                    'dhakatribune.com',
+                    'banglanews24.com',
+                    'jagonews24.com',
+                    'samakal.com',
+                    'kalerkantho.com',
+                    'ittefaq.com.bd',
+                    'jugantor.com',
+                    'newagebd.net',
+                    'tbsnews.net',
+                    'risingbd.com',
+                ]),
+                'siteSearchFilter' => 'i', // Include only these sites
             ]);
 
             if (!$response->successful()) {
@@ -239,6 +259,29 @@ class NewsGenerationService
                     $title = strtolower($item['title'] ?? '');
                     $snippet = strtolower($item['snippet'] ?? '');
                     $source = strtolower($item['displayLink'] ?? '');
+                    
+                    // Filter out non-news sites (books, shopping, etc.)
+                    $nonNewsSites = ['rokomari.com', 'rokomari', 'amazon', 'flipkart', 'daraz', 'alibaba', 'bookshop'];
+                    foreach ($nonNewsSites as $site) {
+                        if (str_contains($link, $site) || str_contains($source, $site)) {
+                            Log::info('Filtered non-news site', ['source' => $item['displayLink'] ?? '']);
+                            return false;
+                        }
+                    }
+                    
+                    // Filter out book-related content
+                    $bookKeywords = ['বই', 'book', 'রকমারি', 'rokomari', 'মুফতী', 'mufti', 'লেখক', 'author'];
+                    $bookMatchCount = 0;
+                    foreach ($bookKeywords as $keyword) {
+                        if (str_contains($title, $keyword) || str_contains($snippet, $keyword)) {
+                            $bookMatchCount++;
+                        }
+                    }
+                    // If multiple book keywords found, likely a book listing
+                    if ($bookMatchCount >= 2) {
+                        Log::info('Filtered book content', ['title' => $item['title'] ?? '']);
+                        return false;
+                    }
                     
                     // Indian domain filters
                     $indianDomains = ['.in', 'india', 'indian', 'hindi', 'mumbai', 'delhi', 'kolkata', 'bengaluru', 'chennai'];
