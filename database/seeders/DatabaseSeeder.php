@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
             CandidateSeeder::class, // Added candidate seeder
             TimelineEventSeeder::class,
             PollSeeder::class,
-            NewsSeeder::class,
+            // NewsSeeder::class, // Removed - news will be generated via artisan command
         ]);
 
         $this->command->info('Database seeded successfully!');
