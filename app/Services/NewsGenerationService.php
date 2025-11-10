@@ -212,7 +212,7 @@ class NewsGenerationService
 
         try {
             // Build query with additional filters to focus on Bangladesh news
-            $enhancedQuery = $query . ' bangladesh OR বাংলাদেশ -india -ভারত';
+            $enhancedQuery = $query . ' bangladesh বাংলাদেশ -india -ভারত -book -বই';
             
             $response = Http::timeout(30)->get('https://www.googleapis.com/customsearch/v1', [
                 'key' => $apiKey,
@@ -222,23 +222,6 @@ class NewsGenerationService
                 'lr' => 'lang_bn|lang_en',
                 'dateRestrict' => 'd1', // Last 24 hours
                 'sort' => 'date:d:s', // Sort by date, descending (newest first)
-                'tbm' => 'nws', // Search only in news (same as &tbm=nws in Google)
-                'siteSearch' => implode(' OR ', [
-                    'prothomalo.com',
-                    'bdnews24.com',
-                    'thedailystar.net',
-                    'dhakatribune.com',
-                    'banglanews24.com',
-                    'jagonews24.com',
-                    'samakal.com',
-                    'kalerkantho.com',
-                    'ittefaq.com.bd',
-                    'jugantor.com',
-                    'newagebd.net',
-                    'tbsnews.net',
-                    'risingbd.com',
-                ]),
-                'siteSearchFilter' => 'i', // Include only these sites
             ]);
 
             if (!$response->successful()) {
@@ -259,6 +242,30 @@ class NewsGenerationService
                     $title = strtolower($item['title'] ?? '');
                     $snippet = strtolower($item['snippet'] ?? '');
                     $source = strtolower($item['displayLink'] ?? '');
+                    
+                    // Whitelist of Bangladesh news domains
+                    $bdNewsDomains = [
+                        'prothomalo.com', 'bdnews24.com', 'thedailystar.net', 'dhakatribune.com',
+                        'banglanews24.com', 'jagonews24.com', 'samakal.com', 'kalerkantho.com',
+                        'ittefaq.com.bd', 'jugantor.com', 'newagebd.net', 'tbsnews.net',
+                        'risingbd.com', 'barta24.com', 'bd-pratidin.com', 'banglatribune.com',
+                        'mzamin.com', 'manabzamin.com', 'ntvbd.com', 'channeli.tv',
+                        'somoynews.tv', 'jamuna.tv'
+                    ];
+                    
+                    $isValidNewsSite = false;
+                    foreach ($bdNewsDomains as $domain) {
+                        if (str_contains($source, $domain) || str_contains($link, $domain)) {
+                            $isValidNewsSite = true;
+                            break;
+                        }
+                    }
+                    
+                    // If not from a whitelisted news site, filter out
+                    if (!$isValidNewsSite) {
+                        Log::info('Filtered non-whitelisted source', ['source' => $item['displayLink'] ?? '']);
+                        return false;
+                    }
                     
                     // Filter out non-news sites (books, shopping, etc.)
                     $nonNewsSites = ['rokomari.com', 'rokomari', 'amazon', 'flipkart', 'daraz', 'alibaba', 'bookshop'];
