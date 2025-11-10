@@ -42,7 +42,7 @@ Route::prefix('v1')->group(function () {
     Route::get('polls', [PollController::class, 'index']);
     Route::get('polls/{poll}', [PollController::class, 'show']);
     Route::post('polls', [PollController::class, 'store']);
-    Route::post('polls/{poll}/vote', [PollController::class, 'vote']);
+    Route::post('polls/{id}/vote', [PollController::class, 'vote']);
     Route::get('polls/{poll}/winners', [PollController::class, 'getWinnerRanking']);
     
     // OTP Routes

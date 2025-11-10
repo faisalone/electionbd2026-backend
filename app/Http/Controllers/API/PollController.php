@@ -154,8 +154,10 @@ class PollController extends Controller
     /**
      * Vote on a poll (requires OTP verification).
      */
-    public function vote(Request $request, Poll $poll)
+    public function vote(Request $request, $id)
     {
+        $poll = Poll::findOrFail($id);
+        
         $validator = Validator::make($request->all(), [
             'option_id' => 'required|exists:poll_options,id',
             'phone_number' => 'required|string',
