@@ -13,16 +13,18 @@ Artisan::command('inspire', function () {
 // Manual command available: php artisan polls:select-winners
 
 // 🔄 AUTOMATED HOURLY NEWS GENERATION
-// Generates news every hour from Google News (last 1 hour)
+// Generates news every hour from Google News (last 1 hour) at random minutes
 // Topics: নির্বাচন, ভোট, রাজনীতি
+// Runs at random minute (0-59) each hour for natural timing
+$randomMinute = rand(0, 59);
 Schedule::command('news:generate --all')
-    ->hourly() // ✅ RUNS EVERY HOUR
+    ->cron("{$randomMinute} * * * *") // ✅ RUNS AT MINUTE {$randomMinute} EVERY HOUR
     ->timezone('Asia/Dhaka')
     ->withoutOverlapping()
     ->runInBackground()
-    ->onSuccess(function () {
-        Log::info('✅ Hourly news generation completed successfully');
+    ->onSuccess(function () use ($randomMinute) {
+        Log::info("✅ Hourly news generation completed successfully at minute {$randomMinute}");
     })
-    ->onFailure(function () {
-        Log::error('❌ Hourly news generation failed');
+    ->onFailure(function () use ($randomMinute) {
+        Log::error("❌ Hourly news generation failed at minute {$randomMinute}");
     });
