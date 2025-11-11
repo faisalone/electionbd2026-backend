@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\News;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class NewsController extends Controller
 {
@@ -16,17 +17,35 @@ class NewsController extends Controller
         $query = News::query();
 
         // Filter by category
-        if ($request->has('category')) {
-            $query->byCategory($request->category);
+        if ($request->has('category') && $request->category !== 'সব') {
+            $query->where('category', $request->category);
         }
 
         // Filter AI-generated only
         if ($request->has('ai_only') && $request->ai_only) {
-            $query->aiGenerated();
+            $query->where('is_ai_generated', true);
         }
 
-        // Sort by latest
-        $news = $query->latest()->paginate(12);
+        // Get per_page from request or default
+        $perPage = $request->get('per_page', 12);
+        
+        // Select only necessary fields (exclude source_url for performance)
+        // Using Eloquent to get model accessors (image fallback)
+        $news = $query->select([
+            'id',
+            'uid',
+            'title',
+            'summary',
+            'content',
+            'image',
+            'date',
+            'category',
+            'is_ai_generated',
+            'created_at',
+            'updated_at'
+        ])
+        ->latest('created_at')
+        ->paginate($perPage);
 
         return response()->json([
             'success' => true,
@@ -36,19 +55,33 @@ class NewsController extends Controller
                 'total_pages' => $news->lastPage(),
                 'total' => $news->total(),
                 'per_page' => $news->perPage(),
+                'has_more' => $news->hasMorePages(),
             ],
         ]);
     }
 
     /**
-     * Display the specified news article.
+     * Display the specified news article by UID.
      */
     public function show(News $news)
     {
-
+        // Return model directly to get accessors (image fallback)
+        // Only load necessary fields to optimize performance
         return response()->json([
             'success' => true,
-            'data' => $news,
+            'data' => $news->only([
+                'id',
+                'uid',
+                'title',
+                'summary',
+                'content',
+                'image',
+                'date',
+                'category',
+                'is_ai_generated',
+                'created_at',
+                'updated_at'
+            ]),
         ]);
     }
 

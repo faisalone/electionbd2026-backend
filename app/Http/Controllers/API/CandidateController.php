@@ -39,13 +39,37 @@ class CandidateController extends Controller
             });
         }
 
-        // Search by name
+        // Filter by independent candidates
+        if ($request->has('is_independent')) {
+            $query->whereHas('party', function($q) {
+                $q->where('is_independent', true);
+            });
+        }
+
+        // Search by name (supports both Bengali and English)
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name_en', 'LIKE', "%{$search}%")
-                  ->orWhere('name_bn', 'LIKE', "%{$search}%");
+                  ->orWhere('name', 'LIKE', "%{$search}%");
             });
+        }
+
+        // Pagination support
+        if ($request->has('per_page')) {
+            $perPage = min((int)$request->per_page, 100); // Max 100 per page
+            $candidates = $query->paginate($perPage);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $candidates->items(),
+                'pagination' => [
+                    'total' => $candidates->total(),
+                    'per_page' => $candidates->perPage(),
+                    'current_page' => $candidates->currentPage(),
+                    'last_page' => $candidates->lastPage(),
+                ],
+            ]);
         }
 
         $candidates = $query->get();

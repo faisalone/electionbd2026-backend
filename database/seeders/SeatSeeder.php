@@ -10,25 +10,27 @@ class SeatSeeder extends Seeder
 {
     public function run(): void
     {
-        // Generate seats for each district based on their total_seats count
-        $districts = District::all();
+        $seatsData = require database_path('data/seats_data.php');
+        
+        foreach ($seatsData as $districtSlug => $seats) {
+            // Find district by name_en (slug)
+            $district = District::where('name_en', $districtSlug)->first();
+            
+            if (!$district) {
+                $this->command->warn("District not found: {$districtSlug}");
+                continue;
+            }
 
-        foreach ($districts as $district) {
-            for ($i = 1; $i <= $district->total_seats; $i++) {
+            foreach ($seats as $seatData) {
                 Seat::create([
                     'district_id' => $district->id,
-                    'name' => $district->name . '-' . $this->toBengaliNumber($i),
-                    'name_en' => $district->name_en . '-' . $i,
-                    'area' => $district->name . ' এলাকা ' . $this->toBengaliNumber($i),
+                    'name' => $seatData['name'],
+                    'name_en' => $seatData['name_en'],
+                    'area' => $seatData['area'] ?? null,
                 ]);
             }
         }
-    }
-
-    private function toBengaliNumber($number)
-    {
-        $bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-        $englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-        return str_replace($englishDigits, $bengaliDigits, (string)$number);
+        
+        $this->command->info('Seats seeded successfully!');
     }
 }
