@@ -22,6 +22,11 @@ class NewsGenerationService
      */
     private int $maxEventsPerTopic = 3;
 
+    public function __construct(private NewsSourceService $newsSourceService)
+    {
+    }
+    
+
     /**
      * Generate news articles for all configured topics.
      * Each topic can generate multiple articles based on different events.
@@ -202,173 +207,13 @@ class NewsGenerationService
      */
     private function fetchSources(string $query, int $maxResults = 10): array
     {
-        $apiKey = config('services.google.api_key');
-        $searchEngineId = config('services.google.search_engine_id');
+        $sources = $this->newsSourceService->fetchSources($query, $maxResults);
 
-        if (!$apiKey || !$searchEngineId) {
-            Log::warning('Google Custom Search API not configured');
+        if (empty($sources)) {
             return [];
         }
 
-        try {
-            // Focus query on Bangladesh political news only
-            $enhancedQuery = "বাংলাদেশ {$query}";
-            
-            $response = Http::timeout(30)->get('https://www.googleapis.com/customsearch/v1', [
-                'key' => $apiKey,
-                'cx' => $searchEngineId,
-                'q' => $enhancedQuery,
-                'num' => min($maxResults, 10),
-                'lr' => 'lang_bn', // Only Bengali language
-                'dateRestrict' => 'd1', // Last 24 hours
-                'sort' => 'date:d:s', // Sort by date, descending (newest first)
-                'fileType' => '', // No specific file type
-                'safe' => 'off', // Include all results
-            ]);
-
-            if (!$response->successful()) {
-                Log::error('Google API error', [
-                    'status' => $response->status(),
-                    'query' => $query,
-                ]);
-                return [];
-            }
-
-            $data = $response->json();
-            $items = $data['items'] ?? [];
-
-            return collect($items)
-                ->filter(function ($item) {
-                    $link = strtolower($item['link'] ?? '');
-                    $title = strtolower($item['title'] ?? '');
-                    $snippet = strtolower($item['snippet'] ?? '');
-                    $source = strtolower($item['displayLink'] ?? '');
-                    
-                    // STRICT: Only accept these Bangladesh news domains
-                    $bdNewsDomains = [
-                        'prothomalo.com', 'bdnews24.com', 'thedailystar.net', 'dhakatribune.com',
-                        'banglanews24.com', 'jagonews24.com', 'samakal.com', 'kalerkantho.com',
-                        'ittefaq.com.bd', 'jugantor.com', 'newagebd.net', 'tbsnews.net',
-                        'risingbd.com', 'barta24.com', 'bd-pratidin.com', 'banglatribune.com',
-                        'mzamin.com', 'manabzamin.com', 'ntvbd.com', 'channeli.tv',
-                        'somoynews.tv', 'jamuna.tv', 'bonikbarta.net', 'deshrupantor.com'
-                    ];
-                    
-                    $isValidNewsSite = false;
-                    foreach ($bdNewsDomains as $domain) {
-                        if (str_contains($source, $domain) || str_contains($link, $domain)) {
-                            $isValidNewsSite = true;
-                            break;
-                        }
-                    }
-                    
-                    if (!$isValidNewsSite) {
-                        Log::info('Filtered non-BD news site', ['source' => $source]);
-                        return false;
-                    }
-                    
-                    // Must contain Bangladesh-related keywords
-                    $bdKeywords = ['বাংলাদেশ', 'ঢাকা', 'dhaka', 'bangladesh', 'চট্টগ্রাম', 'বাংলা'];
-                    $hasBdKeyword = false;
-                    foreach ($bdKeywords as $keyword) {
-                        if (str_contains($title, $keyword) || str_contains($snippet, $keyword)) {
-                            $hasBdKeyword = true;
-                            break;
-                        }
-                    }
-                    
-                    if (!$hasBdKeyword) {
-                        Log::info('Filtered non-BD topic', ['title' => $item['title'] ?? '']);
-                        return false;
-                    }
-                    
-                    // Exclude BBC and other international news about elections
-                    $excludeKeywords = ['bbc', 'বিবিসি', 'cnn', 'reuters', 'uk election', 'us election', 'america'];
-                    foreach ($excludeKeywords as $exclude) {
-                        if (str_contains($title, $exclude) || str_contains($snippet, $exclude)) {
-                            Log::info('Filtered international news', ['title' => $item['title'] ?? '']);
-                            return false;
-                        }
-                    }
-                    
-                    // Exclude non-political topics (crime, banking, accidents, sports, entertainment)
-                    $excludeTopics = [
-                        'ব্যাংক', 'bank', 'নিখোঁজ', 'missing', 'গুম', 'হত্যা', 'murder', 'দুর্ঘটনা', 'accident',
-                        'ক্রিকেট', 'cricket', 'ফুটবল', 'football', 'খেলা', 'sports', 'চলচ্চিত্র', 'cinema',
-                        'অগ্নিকাণ্ড', 'fire', 'বন্যা', 'flood', 'ভূমিকম্প', 'earthquake', 'আবহাওয়া', 'weather',
-                        'শেয়ার বাজার', 'stock market', 'ডলার', 'dollar', 'টাকা', 'taka rate', 'ব্যবসা', 'business',
-                        'উপপরিচালক', 'deputy director', 'কর্মকর্তা নিখোঁজ', 'official missing'
-                    ];
-                    foreach ($excludeTopics as $topic) {
-                        if (str_contains($title, $topic) || str_contains($snippet, $topic)) {
-                            Log::info('Filtered non-political topic', ['title' => $item['title'] ?? '', 'topic' => $topic]);
-                            return false;
-                        }
-                    }
-                    
-                    // Exclude shopping/book sites
-                    $excludeSites = ['rokomari', 'amazon', 'daraz', 'alibaba', 'bookshop', 'ecs.gov.bd'];
-                    foreach ($excludeSites as $site) {
-                        if (str_contains($link, $site) || str_contains($source, $site)) {
-                            Log::info('Filtered shopping site', ['source' => $source]);
-                            return false;
-                        }
-                    }
-                    
-                    // Exclude book content
-                    if (str_contains($title, 'বই') && str_contains($title, 'রকমারি')) {
-                        Log::info('Filtered book content', ['title' => $item['title'] ?? '']);
-                        return false;
-                    }
-                    
-                    // Must have substantial content (minimum 100 characters - more realistic)
-                    $snippetLength = mb_strlen($item['snippet'] ?? '', 'UTF-8');
-                    if ($snippetLength < 100) {
-                        Log::info('Filtered short content', ['length' => $snippetLength, 'title' => $item['title'] ?? '']);
-                        return false;
-                    }
-                    
-                    // Must contain political/election keywords
-                    $politicalKeywords = [
-                        'নির্বাচন', 'ভোট', 'রাজনীতি', 'দল', 'নেতা', 'সরকার', 'বিরোধী', 'প্রচারণা',
-                        'প্রার্থী', 'সংসদ', 'মন্ত্রী', 'আওয়ামী লীগ', 'বিএনপি', 'জামায়াত', 'জাপা',
-                        'election', 'vote', 'politics', 'political', 'party', 'campaign', 'candidate',
-                        'parliament', 'minister', 'awami league', 'bnp'
-                    ];
-                    
-                    $hasPoliticalKeyword = false;
-                    foreach ($politicalKeywords as $keyword) {
-                        if (str_contains($title, $keyword) || str_contains($snippet, $keyword)) {
-                            $hasPoliticalKeyword = true;
-                            break;
-                        }
-                    }
-                    
-                    if (!$hasPoliticalKeyword) {
-                        Log::info('Filtered non-political content', ['title' => $item['title'] ?? '']);
-                        return false;
-                    }
-                    
-                    return true;
-                })
-                ->map(function ($item) {
-                    return [
-                        'title' => $item['title'] ?? '',
-                        'link' => $item['link'] ?? '',
-                        'snippet' => $item['snippet'] ?? '',
-                        'source' => $item['displayLink'] ?? '',
-                    ];
-                })
-                ->values()
-                ->toArray();
-
-        } catch (\Exception $e) {
-            Log::error('Error fetching sources', [
-                'query' => $query,
-                'error' => $e->getMessage(),
-            ]);
-            return [];
-        }
+        return array_values($sources);
     }
 
     /**
@@ -397,9 +242,9 @@ class NewsGenerationService
             return null;
         }
 
-        $category = $this->determineCategory($topic);
-        $sourceContext = $this->buildSourceContext($sources);
-        $prompt = $this->buildPrompt($topic, $sourceContext);
+    $category = $this->determineCategory($topic);
+    $sourceContext = $this->buildSourceContext($sources);
+    $prompt = $this->enforceUtf8($this->buildPrompt($topic, $sourceContext));
 
         try {
             $response = Http::withHeaders([
@@ -455,9 +300,12 @@ class NewsGenerationService
                 return null;
             }
 
+            $article['title'] = trim($this->enforceUtf8($article['title']));
+            $article['summary'] = trim($this->enforceUtf8($article['summary']));
+            $article['content'] = trim($this->enforceUtf8($article['content']));
             $article['category'] = $category;
             $article['date'] = $this->getBengaliDate();
-            $article['sources'] = $sources;
+            $article['sources'] = $this->prepareSourcesForStorage($sources);
 
             return $article;
 
@@ -482,9 +330,9 @@ class NewsGenerationService
             return null;
         }
 
-        $category = $this->determineCategory($topic);
-        $sourceContext = $this->buildSourceContext($sources);
-        $prompt = $this->buildPrompt($topic, $sourceContext);
+    $category = $this->determineCategory($topic);
+    $sourceContext = $this->buildSourceContext($sources);
+    $prompt = $this->enforceUtf8($this->buildPrompt($topic, $sourceContext));
 
         try {
             $model = config('services.gemini.model', 'gemini-2.5-flash');
@@ -547,9 +395,12 @@ class NewsGenerationService
                 return null;
             }
 
+            $article['title'] = trim($this->enforceUtf8($article['title']));
+            $article['summary'] = trim($this->enforceUtf8($article['summary']));
+            $article['content'] = trim($this->enforceUtf8($article['content']));
             $article['category'] = $category;
             $article['date'] = $this->getBengaliDate();
-            $article['sources'] = $sources;
+            $article['sources'] = $this->prepareSourcesForStorage($sources);
 
             return $article;
 
@@ -567,16 +418,31 @@ class NewsGenerationService
      */
     private function buildSourceContext(array $sources): string
     {
-        return collect($sources)->take(5)->map(function ($source, $index) {
-            $num = $index + 1;
-            return sprintf(
-                "=== সূত্র %d ===\nশিরোনাম: %s\nURL: %s\nসারাংশ: %s",
-                $num,
-                $source['title'] ?? '',
-                $source['link'] ?? '',
-                $source['snippet'] ?? ''
-            );
-        })->implode("\n\n---\n\n");
+        return collect($sources)
+            ->take(4)
+            ->map(function ($source, $index) {
+                $num = $index + 1;
+                $title = $this->enforceUtf8($source['title'] ?? '');
+                $link = $source['link'] ?? '';
+                $publishedAt = $this->enforceUtf8($source['published_at'] ?? '');
+                $rawContext = $source['content'] ?? $source['excerpt'] ?? $source['snippet'] ?? '';
+                $context = $this->truncateForPrompt($this->enforceUtf8($rawContext), 1200);
+
+                $lines = [
+                    sprintf('=== সূত্র %d ===', $num),
+                    'শিরোনাম: ' . $title,
+                    'URL: ' . $link,
+                ];
+
+                if ($publishedAt) {
+                    $lines[] = 'প্রকাশকাল: ' . $publishedAt;
+                }
+
+                $lines[] = "মূল বিষয়বস্তু:\n" . $context;
+
+                return implode("\n", $lines);
+            })
+            ->implode("\n\n---\n\n");
     }
 
     /**
@@ -584,10 +450,10 @@ class NewsGenerationService
      */
     private function buildPrompt(string $topic, string $sourceContext): string
     {
-        return <<<PROMPT
-আপনি প্রথম আলো/bdnews24 এর একজন সিনিয়র রিপোর্টার। নিচের আজকের (TODAY'S) তাজা খবর থেকে একটি সংবাদ প্রতিবেদন লিখুন।
+    return <<<PROMPT
+আপনি প্রথম আলো/bdnews24 এর একজন সিনিয়র রিপোর্টার। নিচের আজকের যাচাইকৃত উৎসের মূল বিষয়বস্তু থেকে বাস্তব তথ্য নিয়ে একটি সংবাদ প্রতিবেদন লিখুন。
 
-**� CRITICAL - সবচেয়ে গুরুত্বপূর্ণ নিয়ম:**
+**⚠️ CRITICAL - সবচেয়ে গুরুত্বপূর্ণ নিয়ম:**
 1. **কোনো তারিখ লিখবেন না** - আমরা স্বয়ংক্রিয়ভাবে আজকের তারিখ যোগ করব
 2. **শুধু রাজনীতি/নির্বাচন/ভোট** - অন্য বিষয় (ব্যাংক, নিখোঁজ, ক্রীড়া) একেবারেই না
 3. **কোনো placeholder নয়** - "(তারিখ)", "(নাম)", ইত্যাদি কখনো লিখবেন না
@@ -601,10 +467,10 @@ class NewsGenerationService
 - কোনো section heading নয় ("**বিশ্লেষণ**", "**প্রভাব**" ইত্যাদি লিখবেন না)
 
 **✅ অবশ্যই:**
-- শুধু সূত্রে থাকা বাস্তব তথ্য ব্যবহার করুন
-- "জানা গেছে", "সূত্র জানায়" - এই ধরনের reporter টোন
-- নাম, স্থান, ঘটনা স্পষ্টভাবে উল্লেখ করুন
-- রিপোর্টিং স্টাইল রাখুন
+- শুধুমাত্র প্রদত্ত সূত্রের মূল বিষয়বস্তু এবং তথ্য ব্যবহার করুন
+- "জানা গেছে", "সূত্র জানায়" - এই ধরনের reporter টোন বজায় রাখুন
+- নাম, স্থান, ঘটনা স্পষ্টভাবে এবং বাস্তবভিত্তিকভাবে উল্লেখ করুন
+- রিপোর্টিং স্টাইল রাখুন, বিশ্লেষণাত্মক ভাষা এড়িয়ে চলুন
 
 **❌ কখনো করবেন না:**
 - পুরানো তারিখ লিখবেন না (২০১৯, ২০২০ ইত্যাদি)
@@ -643,6 +509,20 @@ PROMPT;
                 ];
             }
 
+            $sourcePayload = $article['sources'] ?? [];
+            $sourceJson = null;
+
+            if (!empty($sourcePayload)) {
+                try {
+                    $sourceJson = json_encode($sourcePayload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+                } catch (\JsonException $jsonException) {
+                    Log::warning('Failed to encode sources for storage', [
+                        'title' => $article['title'] ?? null,
+                        'error' => $jsonException->getMessage(),
+                    ]);
+                }
+            }
+
             // Create news article
             $news = News::create([
                 'title' => $article['title'],
@@ -652,7 +532,7 @@ PROMPT;
                 'date' => $article['date'],
                 'category' => $article['category'],
                 'is_ai_generated' => true,
-                'source_url' => isset($article['sources']) ? json_encode($article['sources']) : null,
+                'source_url' => $sourceJson,
             ]);
 
             return [
@@ -866,5 +746,40 @@ PROMPT;
         });
 
         return $groups;
+    }
+
+    private function prepareSourcesForStorage(array $sources): array
+    {
+        return collect($sources)
+            ->take(6)
+            ->map(function ($source) {
+                $excerpt = $this->truncateForPrompt(
+                    $this->enforceUtf8($source['content'] ?? $source['excerpt'] ?? $source['snippet'] ?? ''),
+                    500
+                );
+
+                return [
+                    'title' => $this->enforceUtf8($source['title'] ?? ''),
+                    'link' => $source['link'] ?? '',
+                    'source' => $source['source'] ?? '',
+                    'published_at' => $this->enforceUtf8($source['published_at'] ?? ''),
+                    'excerpt' => $excerpt,
+                ];
+            })
+            ->toArray();
+    }
+
+    private function truncateForPrompt(string $text, int $limit): string
+    {
+        if (mb_strlen($text) <= $limit) {
+            return trim($text);
+        }
+
+        return rtrim(mb_substr($text, 0, $limit), " \t\n\r\0\x0B") . '…';
+    }
+
+    private function enforceUtf8(string $value): string
+    {
+        return mb_convert_encoding($value, 'UTF-8', 'UTF-8');
     }
 }

@@ -80,6 +80,8 @@ Use the FetchSourcesTool to search for relevant sources. Try these search querie
 - Translate the topic to English and search
 - Related keywords: "বাংলাদেশ নির্বাচন", "Bangladesh election", "রাজনীতি"
 
+The tool returns full-text excerpts (`content` and `excerpt`) from the approved Bangladeshi news sites—rely on that content for facts.
+
 ### Step 2: Generate Article
 Once you have sources, use the GenerateArticleTool to create a Bangla article with:
 - **Title** (শিরোনাম): Catchy and informative (max 100 characters)

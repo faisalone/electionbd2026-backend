@@ -2,6 +2,7 @@
 
 use App\Mcp\Servers\NewsReporterServer;
 use Laravel\Mcp\Facades\Mcp;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,7 +17,8 @@ use Laravel\Mcp\Facades\Mcp;
 // News Reporter MCP Server
 // This server provides automated Bangla news generation for Bangladesh elections
 Mcp::web('/mcp/news-reporter', NewsReporterServer::class)
-    ->middleware(['throttle:60,1']); // Rate limit: 60 requests per minute
+    ->middleware(['throttle:60,1']) // Rate limit: 60 requests per minute
+    ->withoutMiddleware([VerifyCsrfToken::class]);
 
 // Optional: Add authentication if needed
 // Mcp::web('/mcp/news-reporter', NewsReporterServer::class)
