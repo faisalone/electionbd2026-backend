@@ -59,13 +59,25 @@ class GenerateArticleTool extends Tool
 
             // Prepare source context
             $sourceContext = collect($sources)->map(function ($source) {
-                return sprintf(
-                    "শিরোনাম: %s\nসূত্র: %s\nবিবরণ: %s",
-                    $source['title'] ?? '',
-                    $source['link'] ?? '',
-                    $source['snippet'] ?? ''
-                );
-            })->implode("\n\n");
+                $title = $this->normalizeUtf8($source['title'] ?? '');
+                $link = $source['link'] ?? '';
+                $publishedAt = $this->normalizeUtf8($source['published_at'] ?? '');
+                $rawContent = $source['content'] ?? $source['excerpt'] ?? $source['snippet'] ?? '';
+                $content = $this->limitLength($this->normalizeUtf8($rawContent), 1200);
+
+                $lines = [
+                    'শিরোনাম: ' . $title,
+                    'সূত্র: ' . $link,
+                ];
+
+                if ($publishedAt) {
+                    $lines[] = 'প্রকাশকাল: ' . $publishedAt;
+                }
+
+                $lines[] = "মূল বিষয়বস্তু:\n" . $content;
+
+                return implode("\n", $lines);
+            })->implode("\n\n---\n\n");
 
             // Build prompt
             $prompt = <<<PROMPT
@@ -93,6 +105,8 @@ JSON ফরম্যাটে প্রদান করুন:
 - নিরপেক্ষ ও পেশাদার টোন বজায় রাখুন
 PROMPT;
 
+            $prompt = $this->normalizeUtf8($prompt);
+
             // Determine AI provider
             $provider = config('services.ai.provider', 'openai');
 
@@ -111,9 +125,12 @@ PROMPT;
             }
 
             // Add metadata
+            $article['title'] = trim($this->normalizeUtf8($article['title']));
+            $article['summary'] = trim($this->normalizeUtf8($article['summary']));
+            $article['content'] = trim($this->normalizeUtf8($article['content']));
             $article['category'] = $category;
             $article['date'] = $this->getBengaliDate();
-            $article['sources'] = $sources;
+            $article['sources'] = $this->sanitiseSourcesForPayload($sources);
 
             Log::info('Generated news article', [
                 'topic' => $topic,
@@ -277,5 +294,49 @@ PROMPT;
         $date = str_replace($englishNumbers, $bengaliNumbers, $date);
 
         return $date;
+    }
+    private function normalizeUtf8(?string $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        $value = trim($value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        return mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+    }
+
+    private function limitLength(string $text, int $limit): string
+    {
+        if (mb_strlen($text) <= $limit) {
+            return $text;
+        }
+
+        return rtrim(mb_substr($text, 0, $limit), " \t\n\r\0\x0B") . '…';
+    }
+
+    private function sanitiseSourcesForPayload(array $sources): array
+    {
+        return collect($sources)
+            ->take(6)
+            ->map(function ($source) {
+                $excerpt = $this->limitLength(
+                    $this->normalizeUtf8($source['content'] ?? $source['excerpt'] ?? $source['snippet'] ?? ''),
+                    500
+                );
+
+                return [
+                    'title' => $this->normalizeUtf8($source['title'] ?? ''),
+                    'link' => $source['link'] ?? '',
+                    'source' => $source['source'] ?? '',
+                    'published_at' => $this->normalizeUtf8($source['published_at'] ?? ''),
+                    'excerpt' => $excerpt,
+                ];
+            })
+            ->toArray();
     }
 }

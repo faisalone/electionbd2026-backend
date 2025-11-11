@@ -5,7 +5,6 @@ namespace App\Mcp\Tools;
 use App\Models\News;
 use Illuminate\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
@@ -60,13 +59,14 @@ class PublishArticleTool extends Tool
                 return Response::error('Article must contain title, summary, and content fields.');
             }
 
-            $title = $articleData['title'];
-            $summary = $articleData['summary'];
-            $content = $articleData['content'];
-            $category = $articleData['category'] ?? 'নির্বাচন';
-            $date = $articleData['date'] ?? $this->getBengaliDate();
+            $title = trim($this->normalizeUtf8($articleData['title']));
+            $summary = trim($this->normalizeUtf8($articleData['summary']));
+            $content = trim($this->normalizeUtf8($articleData['content']));
+            $category = $this->normalizeUtf8($articleData['category'] ?? 'নির্বাচন');
+            $date = $this->normalizeUtf8($articleData['date'] ?? $this->getBengaliDate());
             $imageUrl = $validated['image_url'] ?? null;
             $sourceUrls = $validated['source_urls'] ? json_decode($validated['source_urls'], true) : null;
+            $sources = $articleData['sources'] ?? [];
 
             // Check for duplicates using title similarity
             $existingArticle = $this->findDuplicate($title);
@@ -90,6 +90,32 @@ class PublishArticleTool extends Tool
             }
 
             // Create the news article
+            $sourcePayload = null;
+
+            if (is_array($sources) && !empty($sources)) {
+                try {
+                    $sanitisedSources = collect($sources)
+                        ->take(6)
+                        ->map(function ($source) {
+                            return [
+                                'title' => $this->normalizeUtf8($source['title'] ?? ''),
+                                'link' => $source['link'] ?? '',
+                                'source' => $source['source'] ?? '',
+                                'published_at' => $this->normalizeUtf8($source['published_at'] ?? ''),
+                                'excerpt' => $this->limitLength($this->normalizeUtf8($source['excerpt'] ?? ''), 500),
+                            ];
+                        })
+                        ->toArray();
+
+                    $sourcePayload = json_encode($sanitisedSources, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+                } catch (\JsonException $jsonException) {
+                    Log::warning('Failed to encode MCP article sources', [
+                        'title' => $title,
+                        'error' => $jsonException->getMessage(),
+                    ]);
+                }
+            }
+
             $news = News::create([
                 'title' => $title,
                 'summary' => $summary,
@@ -98,7 +124,7 @@ class PublishArticleTool extends Tool
                 'date' => $date,
                 'category' => $category,
                 'is_ai_generated' => true,
-                'source_url' => $sourceUrls ? json_encode($sourceUrls) : null,
+                'source_url' => $sourcePayload ?? ($sourceUrls ? json_encode($sourceUrls, JSON_UNESCAPED_UNICODE) : null),
             ]);
 
             Log::info('Published new AI-generated article', [
@@ -208,5 +234,29 @@ class PublishArticleTool extends Tool
         $date = str_replace($englishNumbers, $bengaliNumbers, $date);
 
         return $date;
+    }
+
+    private function normalizeUtf8(?string $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        $value = trim($value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        return mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+    }
+
+    private function limitLength(string $text, int $limit): string
+    {
+        if (mb_strlen($text) <= $limit) {
+            return $text;
+        }
+
+        return rtrim(mb_substr($text, 0, $limit), " \t\n\r\0\x0B") . '…';
     }
 }
