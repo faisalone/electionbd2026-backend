@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Symbol extends Model
 {
     protected $fillable = [
-        'symbol',
+        'image',
         'symbol_name',
         'is_available',
     ];

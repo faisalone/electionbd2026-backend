@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('phone_number');
             $table->string('otp_code');
-            $table->enum('purpose', ['poll_create', 'poll_vote']); // What the OTP is for
+            $table->enum('purpose', ['poll_create', 'poll_vote', 'admin_login']); // What the OTP is for
             $table->foreignId('poll_id')->nullable()->constrained()->onDelete('cascade');
             $table->boolean('is_verified')->default(false);
             $table->dateTime('expires_at');

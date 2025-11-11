@@ -13,47 +13,34 @@ class PartySeeder extends Seeder
             [
                 'name' => 'বাংলাদেশ আওয়ামী লীগ',
                 'name_en' => 'awami-league',
-                'symbol' => '🚢',
-                'symbol_name' => 'নৌকা',
+                'logo' => null,
+                'symbol_id' => null, // Symbol to be assigned through admin panel
                 'color' => '#00A651',
                 'founded' => '১৯৪৯',
-                'is_independent' => false,
             ],
             [
                 'name' => 'বাংলাদেশ জাতীয়তাবাদী দল',
                 'name_en' => 'bnp',
-                'symbol' => '🌾',
-                'symbol_name' => 'ধানের শীষ',
+                'logo' => null,
+                'symbol_id' => null, // Symbol to be assigned through admin panel
                 'color' => '#00923F',
                 'founded' => '১৯৭৮',
-                'is_independent' => false,
             ],
             [
                 'name' => 'জাতীয় পার্টি',
                 'name_en' => 'jatiya-party',
-                'symbol' => '🏏',
-                'symbol_name' => 'লাঙ্গল',
+                'logo' => null,
+                'symbol_id' => null, // Symbol to be assigned through admin panel
                 'color' => '#F42A41',
                 'founded' => '১৯৮৬',
-                'is_independent' => false,
             ],
             [
                 'name' => 'জামায়াতে ইসলামী বাংলাদেশ',
                 'name_en' => 'jamaat',
-                'symbol' => '⚖️',
-                'symbol_name' => 'দাঁড়িপাল্লা',
+                'logo' => null,
+                'symbol_id' => null, // Symbol to be assigned through admin panel
                 'color' => '#006747',
                 'founded' => '১৯৪১',
-                'is_independent' => false,
-            ],
-            [
-                'name' => 'স্বতন্ত্র প্রার্থী',
-                'name_en' => 'independent',
-                'symbol' => null,
-                'symbol_name' => 'বিভিন্ন',
-                'color' => '#6B7280',
-                'founded' => null,
-                'is_independent' => true,
             ],
         ];
 

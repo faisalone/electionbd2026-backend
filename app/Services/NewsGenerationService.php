@@ -667,28 +667,13 @@ PROMPT;
     }
 
     /**
-     * Get current date in Bengali format.
+     * Get current date in MySQL format (Y-m-d).
+     * The 'date' column in database is DATE type, not a string.
      */
     private function getBengaliDate(): string
     {
-        $englishMonths = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-
-        $bengaliMonths = [
-            'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
-            'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
-        ];
-
-        $englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-        $bengaliNumbers = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-
-        $date = now()->format('d F Y');
-        $date = str_replace($englishMonths, $bengaliMonths, $date);
-        $date = str_replace($englishNumbers, $bengaliNumbers, $date);
-
-        return $date;
+        // Return MySQL date format for the 'date' column
+        return now()->format('Y-m-d');
     }
 
     /**

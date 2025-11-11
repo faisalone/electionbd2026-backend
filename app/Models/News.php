@@ -9,13 +9,14 @@ class News extends Model
 {
     protected $fillable = [
         'title',
-    'uid',
+        'uid',
         'summary',
         'content',
         'image',
         'date',
         'category',
         'is_ai_generated',
+        'status',
         'source_url',
     ];
 

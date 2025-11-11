@@ -15,17 +15,17 @@ return new class extends Migration
             $table->id();
             $table->string('name'); // Bengali name
             $table->string('name_en'); // English name
-            $table->foreignId('party_id')->constrained()->onDelete('cascade');
+            $table->foreignId('party_id')->nullable()->constrained()->onDelete('cascade'); // Nullable for independents
             $table->foreignId('seat_id')->constrained()->onDelete('cascade');
-            $table->foreignId('symbol_id')->nullable()->constrained()->onDelete('set null'); // For independent candidates
+            $table->foreignId('symbol_id')->nullable()->constrained()->onDelete('set null'); // For independent candidates only
             $table->integer('age');
             $table->string('education');
             $table->text('experience')->nullable();
             $table->string('image')->nullable();
             $table->timestamps();
 
-            // Ensure one candidate per seat per party (or independent with unique symbol)
-            $table->unique(['seat_id', 'party_id']);
+            // Ensure unique combination: one candidate per seat per party OR one independent candidate per seat per symbol
+            $table->unique(['seat_id', 'party_id', 'symbol_id']);
         });
     }
 

@@ -22,6 +22,8 @@ class Candidate extends Model
 
     protected $with = ['party', 'seat', 'symbol'];
 
+    protected $appends = ['is_independent'];
+
     public function party(): BelongsTo
     {
         return $this->belongsTo(Party::class);
@@ -37,20 +39,33 @@ class Candidate extends Model
         return $this->belongsTo(Symbol::class);
     }
 
+    // Check if candidate is independent (no party, has symbol)
+    protected function isIndependent(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => !$this->party_id && $this->symbol_id
+        );
+    }
+
+    // Get effective symbol for display
     protected function effectiveSymbol(): Attribute
     {
         return Attribute::make(
             get: function () {
-                if ($this->party && $this->party->is_independent && $this->symbol) {
+                // Independent candidate: use their assigned symbol
+                if (!$this->party_id && $this->symbol) {
                     return [
-                        'symbol' => $this->symbol->symbol,
+                        'image' => $this->symbol->image,
                         'symbol_name' => $this->symbol->symbol_name,
                     ];
                 }
-                return [
-                    'symbol' => $this->party->symbol ?? '',
-                    'symbol_name' => $this->party->symbol_name ?? '',
-                ];
+                // Party candidate: use party's symbol
+                if ($this->party) {
+                    return [
+                        'symbol_name' => $this->party->symbol_name,
+                    ];
+                }
+                return null;
             }
         );
     }

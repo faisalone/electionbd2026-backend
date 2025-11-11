@@ -15,11 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('name'); // Bengali name
             $table->string('name_en')->unique(); // English name
-            $table->string('symbol')->nullable(); // Unicode symbol emoji
-            $table->string('symbol_name'); // Bengali symbol name
+            $table->string('logo')->nullable(); // Party logo image path
+            $table->foreignId('symbol_id')->nullable()->constrained()->onDelete('set null'); // Foreign key to symbols table
             $table->string('color')->default('#6B7280'); // Hex color code
             $table->string('founded')->nullable(); // Year or date founded
-            $table->boolean('is_independent')->default(false); // Special party for independents
             $table->timestamps();
         });
     }

@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('symbols', function (Blueprint $table) {
+        Schema::create('admins', function (Blueprint $table) {
             $table->id();
-            $table->string('image'); // Symbol image path
-            $table->string('symbol_name'); // Bengali name
-            $table->boolean('is_available')->default(true); // Track availability per election
+            $table->string('name');
+            $table->string('phone_number')->unique();
+            $table->timestamp('phone_verified_at')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->string('role')->default('admin'); // For future role expansion
             $table->timestamps();
         });
     }
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('symbols');
+        Schema::dropIfExists('admins');
     }
 };

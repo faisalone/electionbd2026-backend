@@ -4,30 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Party extends Model
 {
     protected $fillable = [
         'name',
         'name_en',
-        'symbol',
-        'symbol_name',
+        'logo',
+        'symbol_id',
         'color',
         'founded',
-        'is_independent',
     ];
 
-    protected $casts = [
-        'is_independent' => 'boolean',
-    ];
+    protected $with = ['symbol'];
 
     public function candidates(): HasMany
     {
         return $this->hasMany(Candidate::class);
     }
 
-    public static function independent()
+    public function symbol(): BelongsTo
     {
-        return static::where('is_independent', true)->first();
+        return $this->belongsTo(Symbol::class);
     }
 }

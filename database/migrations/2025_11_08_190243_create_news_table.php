@@ -18,9 +18,10 @@ return new class extends Migration
             $table->text('summary'); // Short summary
             $table->longText('content'); // Full content
             $table->string('image')->nullable();
-            $table->string('date'); // Bengali date
+            $table->date('date'); // Date field
             $table->string('category')->default('নির্বাচন');
             $table->boolean('is_ai_generated')->default(false);
+            $table->enum('status', ['published', 'pending', 'rejected'])->default('published');
             $table->text('source_url')->nullable(); // Original source if applicable
             $table->timestamps();
         });
