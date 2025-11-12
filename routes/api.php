@@ -10,6 +10,7 @@ use App\Http\Controllers\API\PartyController;
 use App\Http\Controllers\API\TimelineController;
 use App\Http\Controllers\API\PollController;
 use App\Http\Controllers\API\NewsController;
+use App\Http\Controllers\AiSearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +49,11 @@ Route::prefix('v1')->group(function () {
     // OTP Routes
     Route::post('otp/send', [PollController::class, 'sendOTP']);
     Route::post('otp/verify', [PollController::class, 'verifyOTP']);
+    
+    // AI Search Routes
+    Route::post('ai/search', [AiSearchController::class, 'search']);
+    Route::get('ai/suggestions', [AiSearchController::class, 'suggestions']);
+    Route::delete('ai/suggestions', [AiSearchController::class, 'removeSuggestion']);
 });
 
 // Health check endpoint
