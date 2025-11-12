@@ -20,7 +20,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ জাতীয়তাবাদী দল (বিএনপি)',
                 'name_en' => 'Bangladesh Nationalist Party (BNP)',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 6, // ধানের শীষ (sheaf-of-paddy)
                 'color' => '#00923F',
                 'founded' => '১৯৭৮',
                 'registration_number' => '007',
@@ -38,7 +38,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ জামায়াতে ইসলামী',
                 'name_en' => 'Bangladesh Jamaat-e-Islami',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 13, // দাঁড়িপাল্লা (scales)
                 'color' => '#006747',
                 'founded' => '১৯৪১',
                 'registration_number' => '014',
@@ -55,7 +55,7 @@ class PartySeeder extends Seeder
                 'name' => 'জাতীয় নাগরিক পার্টি (এনসিপি)',
                 'name_en' => 'National Citizens Party (NCP)',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 54, // শাপলার কলি (water-lily-bud) - New party gets new symbol
                 'color' => '#FF6B35',
                 'founded' => '2025',
                 'registration_number' => null,
@@ -72,7 +72,7 @@ class PartySeeder extends Seeder
                 'name' => 'লিবারেল ডেমোক্রেটিক পার্টি - এলডিপি',
                 'name_en' => 'liberal-democratic-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 1, // ছাতা (umbrella)
                 'color' => '#0066CC',
                 'founded' => '২০০৮',
                 'registration_number' => '001',
@@ -89,7 +89,7 @@ class PartySeeder extends Seeder
                 'name' => 'জাতীয় পার্টি - জেপি',
                 'name_en' => 'jatiya-party-jp',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 2, // বাইসাইকেল (bicycle)
                 'color' => '#F42A41',
                 'founded' => '২০০৮',
                 'registration_number' => '002',
@@ -105,7 +105,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশের সাম্যবাদী দল (এম.এল)',
                 'name_en' => 'bangladesher-samyabadi-dal-ml',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 3, // চাকা (wheel)
                 'color' => '#DC143C',
                 'founded' => '২০০৮',
                 'registration_number' => '003',
@@ -119,7 +119,7 @@ class PartySeeder extends Seeder
                 'name' => 'কৃষক শ্রমিক জনতা লীগ',
                 'name_en' => 'krishak-sramik-janata-league',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 4, // গামছা (gamchha)
                 'color' => '#228B22',
                 'founded' => '২০০৮',
                 'registration_number' => '004',
@@ -136,7 +136,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশের কমিউনিস্ট পার্টি',
                 'name_en' => 'communist-party-of-bangladesh',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 5, // কাস্তে (sickle)
                 'color' => '#DC143C',
                 'founded' => '২০০৮',
                 'registration_number' => '005',
@@ -154,7 +154,7 @@ class PartySeeder extends Seeder
                 'name' => 'গণতন্ত্রী পার্টি',
                 'name_en' => 'gonotantri-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 7, // কবুতর (dove)
                 'color' => '#4169E1',
                 'founded' => '২০০৮',
                 'registration_number' => '008',
@@ -170,7 +170,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ ন্যাশনাল আওয়ামী পার্টি',
                 'name_en' => 'bangladesh-national-awami-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 8, // কুঁড়েঘর (hut)
                 'color' => '#8B4513',
                 'founded' => '২০০৮',
                 'registration_number' => '009',
@@ -185,7 +185,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশের ওয়ার্কার্স পার্টি',
                 'name_en' => 'workers-party-of-bangladesh',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 9, // হাতুড়ী (hammer)
                 'color' => '#DC143C',
                 'founded' => '২০০৮',
                 'registration_number' => '010',
@@ -201,7 +201,7 @@ class PartySeeder extends Seeder
                 'name' => 'বিকল্পধারা বাংলাদেশ',
                 'name_en' => 'bikalpadhara-bangladesh',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 10, // কুলা (winnowing-fan)
                 'color' => '#FF8C00',
                 'founded' => '২০০৮',
                 'registration_number' => '011',
@@ -218,7 +218,7 @@ class PartySeeder extends Seeder
                 'name' => 'জাতীয় পার্টি',
                 'name_en' => 'jatiya-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 11, // লাঙ্গল (plough)
                 'color' => '#FF6347',
                 'founded' => '১৯৮৬',
                 'registration_number' => '012',
@@ -235,7 +235,7 @@ class PartySeeder extends Seeder
                 'name' => 'জাতীয় সমাজতান্ত্রিক দল-জাসদ',
                 'name_en' => 'jatiya-samajtantrik-dal-jasad',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 12, // মশাল (torch)
                 'color' => '#FF4500',
                 'founded' => '২০০৮',
                 'registration_number' => '013',
@@ -251,7 +251,7 @@ class PartySeeder extends Seeder
                 'name' => 'জাতীয় সমাজতান্ত্রিক দল-জেএসডি',
                 'name_en' => 'jatiya-samajtantrik-dal-jsd',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 14, // তারা (star)
                 'color' => '#FFD700',
                 'founded' => '২০০৮',
                 'registration_number' => '015',
@@ -267,7 +267,7 @@ class PartySeeder extends Seeder
                 'name' => 'জাকের পার্টি',
                 'name_en' => 'zaker-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 15, // গোলাপ ফুল (rose)
                 'color' => '#FF1493',
                 'founded' => '২০০৮',
                 'registration_number' => '016',
@@ -282,7 +282,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশের সমাজতান্ত্রিক দল-বাসদ',
                 'name_en' => 'socialist-party-of-bangladesh-basad',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 16, // মই (ladder)
                 'color' => '#DC143C',
                 'founded' => '২০০৮',
                 'registration_number' => '017',
@@ -297,7 +297,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ জাতীয় পার্টি-বিজেপি',
                 'name_en' => 'bangladesh-jatiya-party-bjp',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 17, // গরুরগাড়ী (bullock-cart)
                 'color' => '#8B4513',
                 'founded' => '২০০৮',
                 'registration_number' => '018',
@@ -311,7 +311,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ তরিকত ফেডারেশন',
                 'name_en' => 'bangladesh-tarikat-federation',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 18, // ফুলের মালা (garland)
                 'color' => '#FF69B4',
                 'founded' => '২০০৮',
                 'registration_number' => '019',
@@ -327,7 +327,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ খেলাফত আন্দোলন',
                 'name_en' => 'bangladesh-khilafat-andolon',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 19, // বটগাছ (banyan-tree)
                 'color' => '#228B22',
                 'founded' => '২০০৮',
                 'registration_number' => '020',
@@ -341,7 +341,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ মুসলিম লীগ',
                 'name_en' => 'bangladesh-muslim-league',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 20, // হারিকেন (hurricane-lantern)
                 'color' => '#FF8C00',
                 'founded' => '২০০৮',
                 'registration_number' => '021',
@@ -355,7 +355,7 @@ class PartySeeder extends Seeder
                 'name' => 'ন্যাশনাল পিপলস্‌ পার্টি (এনপিপি)',
                 'name_en' => 'national-peoples-party-npp',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 21, // আম (mango)
                 'color' => '#FFD700',
                 'founded' => '২০০৮',
                 'registration_number' => '022',
@@ -369,7 +369,7 @@ class PartySeeder extends Seeder
                 'name' => 'জমিয়তে উলামায়ে ইসলাম বাংলাদেশ',
                 'name_en' => 'jamiate-ulama-e-islam-bangladesh',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 22, // খেজুরগাছ (date-palm)
                 'color' => '#228B22',
                 'founded' => '২০০৮',
                 'registration_number' => '023',
@@ -384,7 +384,7 @@ class PartySeeder extends Seeder
                 'name' => 'গণফোরাম',
                 'name_en' => 'gano-forum',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 23, // উদীয়মান সূর্য (rising-sun)
                 'color' => '#FF6347',
                 'founded' => '২০০৮',
                 'registration_number' => '024',
@@ -399,7 +399,7 @@ class PartySeeder extends Seeder
                 'name' => 'গণফ্রন্ট',
                 'name_en' => 'gano-front',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 24, // মাছ (fish)
                 'color' => '#1E90FF',
                 'founded' => '২০০৮',
                 'registration_number' => '025',
@@ -415,7 +415,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ ন্যাশনাল আওয়ামী পার্টি-বাংলাদেশ ন্যাপ',
                 'name_en' => 'bangladesh-national-awami-party-bangladesh-nap',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 25, // গাভী (cow)
                 'color' => '#8B4513',
                 'founded' => '২০০৮',
                 'registration_number' => '027',
@@ -430,7 +430,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ জাতীয় পার্টি',
                 'name_en' => 'bangladesh-jatiya-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 26, // কাঁঠাল (jackfruit)
                 'color' => '#FFD700',
                 'founded' => '২০০৮',
                 'registration_number' => '028',
@@ -445,7 +445,7 @@ class PartySeeder extends Seeder
                 'name' => 'ইসলামিক ফ্রন্ট বাংলাদেশ',
                 'name_en' => 'islamic-front-bangladesh',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 27, // চেয়ার (chair)
                 'color' => '#006747',
                 'founded' => '২০০৮',
                 'registration_number' => '030',
@@ -460,7 +460,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ কল্যাণ পার্টি',
                 'name_en' => 'bangladesh-kallyan-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 28, // হাতঘড়ি (wristwatch)
                 'color' => '#4169E1',
                 'founded' => '২০০৮',
                 'registration_number' => '031',
@@ -478,7 +478,7 @@ class PartySeeder extends Seeder
                 'name' => 'ইসলামী ঐক্যজোট',
                 'name_en' => 'islami-oikya-jote',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 29, // মিনার (minaret)
                 'color' => '#006747',
                 'founded' => '২০০৮',
                 'registration_number' => '032',
@@ -495,7 +495,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ খেলাফত মজলিস',
                 'name_en' => 'bangladesh-khilafat-majlis',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 30, // রিক্সা (rickshaw)
                 'color' => '#FFD700',
                 'founded' => '২০০৮',
                 'registration_number' => '033',
@@ -510,7 +510,7 @@ class PartySeeder extends Seeder
                 'name' => 'ইসলামী আন্দোলন বাংলাদেশ',
                 'name_en' => 'islami-andolon-bangladesh',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 31, // হাতপাখা (hand-fan)
                 'color' => '#006747',
                 'founded' => '২০০৮',
                 'registration_number' => '034',
@@ -526,7 +526,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ ইসলামী ফ্রন্ট',
                 'name_en' => 'bangladesh-islami-front',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 32, // মোমবাতি (candle)
                 'color' => '#FFA500',
                 'founded' => '২০০৮',
                 'registration_number' => '035',
@@ -540,7 +540,7 @@ class PartySeeder extends Seeder
                 'name' => 'জাতীয় গণতান্ত্রিক পার্টি-জাগপা',
                 'name_en' => 'jatiya-gonotantrik-party-jagpa',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 33, // হুক্কা (hookah)
                 'color' => '#8B4513',
                 'founded' => '২০০৮',
                 'registration_number' => '036',
@@ -550,7 +550,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশের বিপ্লবী ওয়ার্কার্স পার্টি',
                 'name_en' => 'revolutionary-workers-party-of-bangladesh',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 34, // কোদাল (spade)
                 'color' => '#DC143C',
                 'founded' => '২০০৮',
                 'registration_number' => '037',
@@ -565,7 +565,7 @@ class PartySeeder extends Seeder
                 'name' => 'খেলাফত মজলিস',
                 'name_en' => 'khilafat-majlis',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 35, // দেওয়াল ঘড়ি (wall-clock)
                 'color' => '#006747',
                 'founded' => '২০০৮',
                 'registration_number' => '038',
@@ -582,7 +582,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ মুসলিম লীগ-বিএমএল',
                 'name_en' => 'bangladesh-muslim-league-bml',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 36, // হাত (পাঞ্জা) (hand)
                 'color' => '#FF6347',
                 'founded' => '২০১৩',
                 'registration_number' => '040',
@@ -598,7 +598,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ সাংস্কৃতিক মুক্তিজোট (মুক্তিজোট)',
                 'name_en' => 'bangladesh-sangskritik-muktijot',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 37, // ছড়ি (walking-stick)
                 'color' => '#4169E1',
                 'founded' => '২০১৩',
                 'registration_number' => '041',
@@ -614,7 +614,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ ন্যাশনালিস্ট ফ্রন্ট-বিএনএফ',
                 'name_en' => 'bangladesh-nationalist-front-bnf',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 38, // টেলিভিশন (television)
                 'color' => '#0066CC',
                 'founded' => '২০১৩',
                 'registration_number' => '042',
@@ -628,7 +628,7 @@ class PartySeeder extends Seeder
                 'name' => 'জাতীয়তাবাদী গণতান্ত্রিক আন্দোলন-এনডিএম',
                 'name_en' => 'jatiyatabadi-gonotantrik-andolon-ndm',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 39, // সিংহ (lion)
                 'color' => '#FFD700',
                 'founded' => '২০১৯',
                 'registration_number' => '043',
@@ -644,7 +644,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ কংগ্রেস',
                 'name_en' => 'bangladesh-congress',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 40, // ডাব (green-coconut)
                 'color' => '#1E90FF',
                 'founded' => '২০১৯',
                 'registration_number' => '044',
@@ -660,7 +660,7 @@ class PartySeeder extends Seeder
                 'name' => 'তৃণমূল বিএনপি',
                 'name_en' => 'trinamul-bnp',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 41, // সোনালী আঁশ (golden-fiber)
                 'color' => '#FFD700',
                 'founded' => '২০২৩',
                 'registration_number' => '045',
@@ -676,7 +676,7 @@ class PartySeeder extends Seeder
                 'name' => 'ইনসানিয়াত বিপ্লব বাংলাদেশ',
                 'name_en' => 'insaniyat-biplob-bangladesh',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 42, // আপেল (apple)
                 'color' => '#FF0000',
                 'founded' => '২০২৩',
                 'registration_number' => '046',
@@ -691,7 +691,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ জাতীয় সমাজতান্ত্রিক দল-বাংলাদেশ জাসদ',
                 'name_en' => 'bangladesh-jatiya-samajtantrik-dal-bangladesh-jasad',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 43, // মটরগাড়ি (কার) (car)
                 'color' => '#DC143C',
                 'founded' => '২০২৩',
                 'registration_number' => '047',
@@ -707,7 +707,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ জাতীয়তাবাদী আন্দোলন-বিএনএম',
                 'name_en' => 'bangladesh-jatiyatabadi-andolon-bnm',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 44, // নোঙ্গর (anchor)
                 'color' => '#1E90FF',
                 'founded' => '২০২৩',
                 'registration_number' => '048',
@@ -722,7 +722,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ সুপ্রীম পার্টি (বি.এস.পি)',
                 'name_en' => 'bangladesh-supreme-party-bsp',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 45, // একতারা (ektara)
                 'color' => '#FF6347',
                 'founded' => '২০২৩',
                 'registration_number' => '049',
@@ -737,7 +737,7 @@ class PartySeeder extends Seeder
                 'name' => 'আমার বাংলাদেশ পার্টি (এবি পার্টি)',
                 'name_en' => 'amar-bangladesh-party-ab-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 46, // ঈগল (eagle)
                 'color' => '#8B4513',
                 'founded' => '২০২৪',
                 'registration_number' => '050',
@@ -752,7 +752,7 @@ class PartySeeder extends Seeder
                 'name' => 'গণঅধিকার পরিষদ (জিওপি)',
                 'name_en' => 'gano-odhikar-parishad-gop',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 47, // ট্রাক (truck)
                 'color' => '#4169E1',
                 'founded' => '২০২৪',
                 'registration_number' => '051',
@@ -767,7 +767,7 @@ class PartySeeder extends Seeder
                 'name' => 'নাগরিক ঐক্য',
                 'name_en' => 'nagorik-oikko',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 48, // কেটলি (kettle)
                 'color' => '#FF6347',
                 'founded' => '২০২৪',
                 'registration_number' => '052',
@@ -782,7 +782,7 @@ class PartySeeder extends Seeder
                 'name' => 'গণসংহতি আন্দোলন',
                 'name_en' => 'gano-sangati-andolon',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 49, // মাথাল (mathal)
                 'color' => '#DC143C',
                 'founded' => '২০২৪',
                 'registration_number' => '053',
@@ -797,7 +797,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ ডেভেলপমেন্ট পার্টি',
                 'name_en' => 'bangladesh-development-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 50, // ফুলকপি (cauliflower)
                 'color' => '#90EE90',
                 'founded' => '২০২৫',
                 'registration_number' => '054',
@@ -812,7 +812,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ মাইনরিটি জনতা পার্টি (বিএমজেপি)',
                 'name_en' => 'bangladesh-minority-janata-party-bmjp',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 51, // রকেট (rocket)
                 'color' => '#FF6347',
                 'founded' => '২০২৫',
                 'registration_number' => '055',
@@ -827,7 +827,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ লেবার পার্টি',
                 'name_en' => 'bangladesh-labour-party',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 52, // আনারস (pineapple)
                 'color' => '#FFD700',
                 'founded' => '২০২৫',
                 'registration_number' => '056',
@@ -843,7 +843,7 @@ class PartySeeder extends Seeder
                 'name' => 'বাংলাদেশ রিপাবলিকান পার্টি (বিআরপি)',
                 'name_en' => 'bangladesh-republican-party-brp',
                 'logo' => null,
-                'symbol_id' => null,
+                'symbol_id' => 53, // হাতি (elephant)
                 'color' => '#808080',
                 'founded' => '২০২৫',
                 'registration_number' => '057',
