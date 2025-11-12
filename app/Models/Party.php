@@ -15,6 +15,16 @@ class Party extends Model
         'symbol_id',
         'color',
         'founded',
+        'registration_number',
+        'registration_date',
+        'chairman',
+        'secretary_general',
+        'office_address',
+        'phone',
+        'fax',
+        'mobile',
+        'email',
+        'website',
     ];
 
     protected $with = ['symbol'];
