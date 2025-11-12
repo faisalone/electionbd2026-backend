@@ -333,15 +333,15 @@ class CandidateSeeder extends Seeder
     }
 
     /**
-     * Extract district name and seat number from text like "পঞ্চগড়-১" or "ঢাকা-১১"
+     * Extract district name and seat number from text like "পঞ্চগড়-১" or "পঞ্চগড়_1" or "ঢাকা-১১"
      */
     private function extractSeatInfo(string $seatText): ?array
     {
         // Convert Bengali numerals to English
         $seatText = $this->convertBengaliToEnglish($seatText);
 
-        // Pattern: "district-number"
-        if (preg_match('/^([^\-]+)-(\d+)$/', $seatText, $matches)) {
+        // Pattern: "district-number" or "district_number" (support both hyphen and underscore)
+        if (preg_match('/^([^\-_]+)[-_](\d+)$/', $seatText, $matches)) {
             return [
                 'district' => trim($matches[1]),
                 'number' => (int)$matches[2],
@@ -356,8 +356,12 @@ class CandidateSeeder extends Seeder
      */
     private function normalizeSeatKey(string $district, int $number): string
     {
-        // Normalize district name
+        // Normalize district name and apply Unicode NFC normalization
         $district = trim($district);
+        // Normalize Unicode to NFC form (precomposed characters)
+        if (class_exists('Normalizer')) {
+            $district = \Normalizer::normalize($district, \Normalizer::FORM_C);
+        }
         return "{$district}_{$number}";
     }
 
