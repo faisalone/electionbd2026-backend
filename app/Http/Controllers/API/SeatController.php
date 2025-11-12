@@ -25,7 +25,8 @@ class SeatController extends Controller
             });
         }
 
-        $seats = $query->orderBy('name_en')->get();
+        // No explicit orderBy needed - Seat model has global scope ordering by seat_number
+        $seats = $query->get();
 
         return response()->json([
             'success' => true,
