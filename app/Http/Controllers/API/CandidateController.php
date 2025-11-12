@@ -55,6 +55,11 @@ class CandidateController extends Controller
             });
         }
 
+        // Order by seat number first (so candidates are grouped by seat), then by candidate name
+        // Use whereHas to ensure seat relationship exists, then order by seat_number via subquery
+        $query->orderByRaw('(SELECT seat_number FROM seats WHERE seats.id = candidates.seat_id) ASC')
+              ->orderBy('candidates.name', 'asc');
+
         // Pagination support
         if ($request->has('per_page')) {
             $perPage = min((int)$request->per_page, 100); // Max 100 per page
