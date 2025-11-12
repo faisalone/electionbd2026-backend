@@ -20,9 +20,9 @@ class DatabaseSeeder extends Seeder
             DivisionSeeder::class,
             DistrictSeeder::class,
             SeatSeeder::class,
+            SymbolSeeder::class,     // Must run before PartySeeder (parties reference symbols)
             PartySeeder::class,
-            SymbolSeeder::class,
-            CandidateSeeder::class, // Added candidate seeder
+            CandidateSeeder::class,  // Must run after PartySeeder and SeatSeeder
             TimelineEventSeeder::class,
             PollSeeder::class,
             // NewsSeeder::class, // Removed - news will be generated via artisan command
