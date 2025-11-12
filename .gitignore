@@ -22,3 +22,9 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Temporary scripts
+add_division_district_order.php
+add_seat_numbers.php
+parse_seats.php
+production_ordering.php
