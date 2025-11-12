@@ -96,7 +96,7 @@ jobs:
             php artisan route:clear
             php artisan view:clear
             
-            # Run migrations (if any)
+            # Run migrations
             php artisan migrate --force
             
             # Optimize for production
@@ -104,11 +104,12 @@ jobs:
             php artisan route:cache
             php artisan view:cache
             
-            # Restart queue workers to pick up new code
+            # Restart queue workers
             php artisan queue:restart
             
-            # Restart Reverb server for broadcasting
+            # Restart Reverb WebSocket server (ensures it's always running)
             pm2 restart electionbd2026-reverb || pm2 start "php artisan reverb:start" --name electionbd2026-reverb
+            pm2 save
             
             # Set proper permissions
             sudo chown -R www-data:www-data storage bootstrap/cache
