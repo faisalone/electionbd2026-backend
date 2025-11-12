@@ -187,13 +187,13 @@ class AiSearchController extends Controller
         return <<<PROMPT
 You are an AI assistant for Bangladesh Election 2026. Analyze the user's query and determine what information to search for.
 
-Information Categories:
-1. **Candidates** - Candidate information (name, age, education, party affiliation)
-2. **Political Parties** - Party details (name, symbol, history)
-3. **News** - Election news and updates
-4. **Polls** - Public opinion polls and predictions
-5. **Constituencies** - Electoral seat information
-6. **Timeline** - Election schedule and events
+Database Tables Available (use exact names in search_tables):
+1. **candidates** - Candidate information (name, age, education, party affiliation)
+2. **parties** - Political parties (name, symbol, history)
+3. **news** - Election news and updates
+4. **polls** - Public opinion polls and predictions
+5. **seats** - Electoral constituencies
+6. **timeline_events** - Election schedule, dates, and timeline (IMPORTANT: use "timeline_events" not "timeline")
 
 User Query (in Bengali): "{$query}"
 
@@ -202,11 +202,13 @@ Analyze this query and respond in JSON format:
 {
   "thinking": "বিষয় বিশ্লেষণ করছি... [brief user-friendly analysis in Bengali - no technical terms, no table names, just what the user is asking about]",
   "topics": ["topic1", "topic2"],
-  "search_tables": ["table1", "table2"],
+  "search_tables": ["candidates", "parties", "news", "polls", "seats", "timeline_events"],
   "search_terms": ["term1", "term2"],
   "query_type": "specific_info|general_question|comparison|list"
 }
 ```
+
+CRITICAL: Use EXACT table names from the list above in "search_tables" field!
 
 IMPORTANT for "thinking" field:
 - Write in Bengali (বাংলা)
@@ -405,6 +407,11 @@ PROMPT;
      */
     private function searchTimeline(string $query)
     {
+        // For "কবে" (when) questions, return all timeline events
+        if (preg_match('/(কবে|তারিখ|সময়|কখন)/u', $query)) {
+            return TimelineEvent::orderBy('order')->get();
+        }
+        
         return TimelineEvent::where('title', 'LIKE', "%{$query}%")
             ->orWhere('description', 'LIKE', "%{$query}%")
             ->orWhere('date', 'LIKE', "%{$query}%")
@@ -480,18 +487,23 @@ Database Information Found:
 
 Instructions:
 1. Write a natural, conversational response in Bengali (বাংলা)
-2. Act like you're chatting with the user - be friendly and helpful
-3. Summarize the information in 2-4 paragraphs
-4. Don't use structured formatting - write naturally like a summary
-5. If multiple items found, weave them into your narrative
-6. If no data found, politely say "এই বিষয়ে বর্তমানে কোনো তথ্য পাওয়া যায়নি"
-7. Be conversational - use phrases like "আমি দেখছি...", "তথ্য অনুযায়ী...", "বর্তমানে..." 
-8. Don't just list facts - tell a story with the data
+2. DO NOT start with greetings like "নমস্কার", "হ্যালো", "আসসালামু আলাইকুম"
+3. Start DIRECTLY with the answer or information
+4. Summarize the information in 2-4 paragraphs
+5. Don't use structured formatting - write naturally like a summary
+6. If multiple items found, weave them into your narrative
+7. If no data found, politely say "এই বিষয়ে বর্তমানে কোনো তথ্য পাওয়া যায়নি"
+8. Be conversational - use phrases like "তথ্য অনুযায়ী...", "বর্তমানে...", "পাওয়া তথ্যে দেখা যাচ্ছে..."
+9. Don't just list facts - tell a story with the data
+10. Be direct and concise - no unnecessary introductions
 
-Example Good Response:
-"আপনার প্রশ্ন অনুযায়ী আমি ঢাকা জেলার তথ্য খুঁজে দেখেছি। ঢাকা জেলায় মোট ৫টি নির্বাচনী আসন রয়েছে। এর মধ্যে ঢাকা-১ আসনটি দোহার ও নবাবগঞ্জ এলাকা নিয়ে গঠিত। এছাড়া আরও চারটি আসন রয়েছে যেগুলো শহরের বিভিন্ন অংশ কভার করে। প্রতিটি আসনেই বিভিন্ন দলের প্রার্থীরা প্রতিদ্বন্দ্বিতা করছেন।"
+Example Good Response (NO greeting):
+"বাংলাদেশ নির্বাচন ২০২৬-এর তফসিল ঘোষণা হবে ১৫ ডিসেম্বর। এরপর ১০ থেকে ২৫ জানুয়ারির মধ্যে প্রার্থীদের মনোনয়নপত্র জমা দেওয়ার সুযোগ থাকবে। ৩০ জানুয়ারি হবে মনোনয়ন যাচাই-বাছাইয়ের দিন।"
 
-Now write your response in Bengali:
+Example BAD Response (avoid):
+"নমস্কার! আপনি জানতে চেয়েছেন..." ❌
+
+Now write your response in Bengali (NO greeting, start directly):
 PROMPT;
     }
 
