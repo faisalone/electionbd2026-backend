@@ -12,7 +12,8 @@ use App\Models\News;
 use App\Models\Poll;
 use App\Models\Seat;
 use App\Models\TimelineEvent;
-use App\Models\SearchLog;
+use App\Models\SearchQuery;
+use App\Models\SearchQueryView;
 
 class AiSearchController extends Controller
 {
@@ -27,13 +28,33 @@ class AiSearchController extends Controller
 
         $query = $request->input('query');
         $ipAddress = $request->ip();
+        $userAgent = $request->userAgent();
         
-        // Log search for analytics
-        SearchLog::create([
-            'query' => $query,
+        // Advanced search tracking (Google-like)
+        $searchQuery = SearchQuery::firstOrCreate(
+            ['query' => $query],
+            [
+                'view_count' => 0,
+                'unique_users' => 0,
+                'last_searched_at' => now(),
+            ]
+        );
+
+        $view = SearchQueryView::firstOrNew([
+            'search_query_id' => $searchQuery->id,
             'ip_address' => $ipAddress,
-            'user_agent' => $request->userAgent(),
         ]);
+
+        $isNewUser = !$view->exists;
+
+        $view->fill([
+            'user_agent' => $userAgent,
+            'view_count' => $view->view_count + 1,
+            'first_viewed_at' => $view->first_viewed_at ?? now(),
+            'last_viewed_at' => now(),
+        ])->save();
+
+        $searchQuery->incrementViews($isNewUser);
 
         try {
             // Phase 1: AI analyzes query and creates search strategy
@@ -71,24 +92,23 @@ class AiSearchController extends Controller
         $ipAddress = $request->ip();
         
         try {
-            // Get popular searches (global)
-            $globalPopular = SearchLog::select('query', DB::raw('count(*) as count'))
-                ->where('created_at', '>=', now()->subDays(30))
-                ->groupBy('query')
-                ->orderByDesc('count')
+            // Get popular searches globally (sorted by view count)
+            $globalPopular = SearchQuery::where('last_searched_at', '>=', now()->subDays(30))
+                ->orderByDesc('view_count')
                 ->limit(10)
-                ->get()
                 ->pluck('query');
             
             // Get user's recent searches (IP-based)
-            $userRecent = SearchLog::where('ip_address', $ipAddress)
-                ->where('created_at', '>=', now()->subDays(7))
-                ->orderByDesc('created_at')
+            $userRecent = SearchQueryView::where('ip_address', $ipAddress)
+                ->where('last_viewed_at', '>=', now()->subDays(7))
+                ->with('searchQuery')
+                ->orderByDesc('last_viewed_at')
                 ->limit(5)
-                ->pluck('query')
-                ->unique();
+                ->get()
+                ->pluck('searchQuery.query')
+                ->filter(); // Remove nulls if any
             
-            // Combine and deduplicate
+            // Combine and deduplicate (user recent first, then popular)
             $suggestions = $userRecent->merge($globalPopular)->unique()->take(15)->values();
             
             return response()->json([
@@ -118,10 +138,33 @@ class AiSearchController extends Controller
         $ipAddress = $request->ip();
         
         try {
-            // Delete all search logs for this IP and query
-            SearchLog::where('ip_address', $ipAddress)
-                ->where('query', $query)
-                ->delete();
+            // Find the search query
+            $searchQuery = SearchQuery::where('query', $query)->first();
+            
+            if ($searchQuery) {
+                // Delete this IP's view record
+                $view = SearchQueryView::where('search_query_id', $searchQuery->id)
+                    ->where('ip_address', $ipAddress)
+                    ->first();
+                
+                if ($view) {
+                    // Decrement unique_users if this was their only view
+                    if ($view->view_count > 0) {
+                        $searchQuery->decrement('unique_users');
+                    }
+                    
+                    // Decrement total view_count by this IP's contribution
+                    $searchQuery->decrement('view_count', $view->view_count);
+                    
+                    // Delete the view record
+                    $view->delete();
+                    
+                    // If no more views exist for this query, delete the query itself
+                    if ($searchQuery->view_count <= 0) {
+                        $searchQuery->delete();
+                    }
+                }
+            }
             
             return response()->json([
                 'success' => true,
