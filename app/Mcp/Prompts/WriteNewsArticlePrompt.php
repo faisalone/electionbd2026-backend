@@ -24,7 +24,7 @@ class WriteNewsArticlePrompt extends Prompt
         return [
             new Argument(
                 name: 'topic',
-                description: 'The main topic for the news article (e.g., "বাংলাদেশ নির্বাচন ২০২৬", "রাজনৈতিক দলের প্রস্তুতি")',
+                description: 'The main topic for the news article (e.g., "বাংলাদেশ নির্বাচন কমিশন", "রাজনৈতিক দলের প্রস্তুতি")',
                 required: true
             ),
             new Argument(
