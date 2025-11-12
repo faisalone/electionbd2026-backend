@@ -9,12 +9,32 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 class Division extends Model
 {
     protected $fillable = [
+        'order',
         'name',
         'name_en',
         // total_seats removed - use seats_count or seats()->count()
     ];
 
     protected $appends = ['total_seats']; // Add as computed attribute for backward compatibility
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'order' => 'integer',
+    ];
+
+    /**
+     * Default ordering by order number
+     */
+    protected static function booted()
+    {
+        static::addGlobalScope('ordered', function ($query) {
+            $query->orderBy('order');
+        });
+    }
 
     public function districts(): HasMany
     {

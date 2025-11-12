@@ -10,12 +10,32 @@ class District extends Model
 {
     protected $fillable = [
         'division_id',
+        'order',
         'name',
         'name_en',
         // total_seats removed - use seats_count or seats()->count()
     ];
 
     protected $appends = ['total_seats']; // Add as computed attribute for backward compatibility
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'order' => 'integer',
+    ];
+
+    /**
+     * Default ordering by order number
+     */
+    protected static function booted()
+    {
+        static::addGlobalScope('ordered', function ($query) {
+            $query->orderBy('order');
+        });
+    }
 
     public function division(): BelongsTo
     {

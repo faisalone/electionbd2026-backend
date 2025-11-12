@@ -10,10 +10,30 @@ class Seat extends Model
 {
     protected $fillable = [
         'district_id',
+        'seat_number',
         'name',
         'name_en',
         'area',
     ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'seat_number' => 'integer',
+    ];
+
+    /**
+     * Default ordering by seat number
+     */
+    protected static function booted()
+    {
+        static::addGlobalScope('ordered', function ($query) {
+            $query->orderBy('seat_number');
+        });
+    }
 
     public function district(): BelongsTo
     {
