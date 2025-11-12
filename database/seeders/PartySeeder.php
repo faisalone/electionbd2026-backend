@@ -52,11 +52,11 @@ class PartySeeder extends Seeder
 				'website' => 'www.jamaat-e-islami.org',
             ],
             [
-                'name' => 'জাতীয় নাগরিক পার্টি (এনসিপি)',
+                'name' => 'জাতীয় নাগরিক পার্টি (এনসিপি)',
                 'name_en' => 'National Citizens Party (NCP)',
                 'logo' => null,
                 'symbol_id' => null,
-                'color' => null,
+                'color' => '#FF6B35',
                 'founded' => '2025',
                 'registration_number' => null,
                 'registration_date' => null,
