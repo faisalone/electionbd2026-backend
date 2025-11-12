@@ -85,6 +85,59 @@ class AiSearchController extends Controller
     }
 
     /**
+     * Live autocomplete suggestions (Google-like)
+     * Returns matching queries as user types
+     */
+    public function autocomplete(Request $request)
+    {
+        $request->validate([
+            'query' => 'required|string|min:1|max:100',
+        ]);
+
+        $query = $request->input('query');
+        $ipAddress = $request->ip();
+        
+        try {
+            // Get user's matching searches (personalized)
+            $userMatches = SearchQueryView::where('ip_address', $ipAddress)
+                ->whereHas('searchQuery', function($q) use ($query) {
+                    $q->where('query', 'LIKE', "%{$query}%");
+                })
+                ->with('searchQuery')
+                ->orderByDesc('last_viewed_at')
+                ->limit(3)
+                ->get()
+                ->pluck('searchQuery.query')
+                ->filter()
+                ->unique();
+            
+            // Get popular matching searches (global)
+            $globalMatches = SearchQuery::where('query', 'LIKE', "%{$query}%")
+                ->orderByDesc('view_count')
+                ->limit(7)
+                ->pluck('query');
+            
+            // Combine: user history first, then popular
+            $suggestions = $userMatches->merge($globalMatches)
+                ->unique()
+                ->take(10)
+                ->values();
+            
+            return response()->json([
+                'success' => true,
+                'suggestions' => $suggestions,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Autocomplete error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => true,
+                'suggestions' => [],
+            ]);
+        }
+    }
+
+    /**
      * Get search suggestions based on IP and usage
      */
     public function suggestions(Request $request)

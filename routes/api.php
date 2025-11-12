@@ -52,6 +52,7 @@ Route::prefix('v1')->group(function () {
     
     // AI Search Routes
     Route::post('ai/search', [AiSearchController::class, 'search']);
+    Route::get('ai/autocomplete', [AiSearchController::class, 'autocomplete']); // Live suggestions as you type
     Route::get('ai/suggestions', [AiSearchController::class, 'suggestions']);
     Route::delete('ai/suggestions', [AiSearchController::class, 'removeSuggestion']);
 });
