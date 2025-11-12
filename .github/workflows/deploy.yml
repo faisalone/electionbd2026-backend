@@ -104,11 +104,17 @@ jobs:
             php artisan route:cache
             php artisan view:cache
             
-            # Restart queue workers
+            # Restart queue workers gracefully
             php artisan queue:restart
             
-            # Restart Reverb WebSocket server (ensures it's always running)
-            pm2 restart electionbd2026-reverb || pm2 start "php artisan reverb:start" --name electionbd2026-reverb
+            # Ensure queue worker is running (restart with current directory)
+            pm2 delete electionbd2026-queue 2>/dev/null || true
+            pm2 start "php artisan queue:work --tries=3" --name electionbd2026-queue
+            
+            # Ensure Reverb WebSocket server is running
+            pm2 restart electionbd2026-reverb 2>/dev/null || pm2 start "php artisan reverb:start" --name electionbd2026-reverb
+            
+            # Save PM2 configuration
             pm2 save
             
             # Set proper permissions
