@@ -37,6 +37,17 @@ class NewsSourceService
         'jamuna.tv',
         'bonikbarta.net',
         'deshrupantor.com',
+        // Additional trusted sources
+        'bbc.com',
+        'dw.com',
+        'voabengnali.com',
+        'bssnews.net',
+        'dhakapost.com',
+        'itvbd.com',
+        'duaa-news.com',
+        'ajkerpatrika.com',
+        'dailybangla.com.bd',
+        'dainikbangla.com.bd',
     ];
 
     /**
@@ -61,7 +72,7 @@ class NewsSourceService
                 'q' => $enhancedQuery,
                 'num' => min($maxResults * 2, 10),
                 'lr' => 'lang_bn|lang_en',
-                'dateRestrict' => 'd1',
+                'dateRestrict' => 'h2', // Last 2 hours for better freshness
                 'sort' => 'date:d:s',
             ]);
 
@@ -174,6 +185,8 @@ class NewsSourceService
             'ক্রিকেট', 'খেলা', 'খেলাধুলা', 'accident', 'দুর্ঘটনা', 'অপরাধ', 'crime', 'bank',
             'ব্যাংক', 'মুদ্রা', 'weather', 'আবহাওয়া', 'ফুটবল', 'entertainment', 'চলচ্চিত্র',
             'পোড়া', 'অগ্নিকাণ্ড', 'ভূমিকম্প', 'sports', 'stock market', 'শেয়ার বাজার', 'গুজব',
+            'miss universe', 'মিস ইউনিভার্স', 'বিউটি', 'সুন্দরী', 'pageant', 'মডেল',
+            'নিখোঁজ', 'হত্যা', 'ধর্ষণ', 'বিনোদন', 'সিনেমা', 'গান', 'নাটক',
         ];
 
         if (!$this->containsAny($text, $bdKeywords)) {

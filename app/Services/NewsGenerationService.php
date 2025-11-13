@@ -101,7 +101,10 @@ class NewsGenerationService
             // Check for duplicates
             $articleTitles = array_column($eventSources, 'title');
             if ($this->isDuplicateInDatabase($articleTitles)) {
-                Log::info('Duplicate event detected, skipping', ['event' => $eventLabel]);
+                Log::info('Duplicate event detected, skipping', [
+                    'event' => $eventLabel,
+                    'titles' => $articleTitles,
+                ]);
                 $results[] = [
                     'topic' => $eventLabel,
                     'success' => false,
@@ -110,6 +113,13 @@ class NewsGenerationService
                 ];
                 continue;
             }
+
+            // Log event sources to detect if multiple events are being combined
+            Log::info('Generating article for event', [
+                'event' => $eventLabel,
+                'sources_count' => count($eventSources),
+                'source_titles' => array_map(fn($s) => mb_substr($s['title'] ?? '', 0, 80), $eventSources),
+            ]);
 
             // Generate article for this event
             $article = $this->generateArticle($eventSources, $topic);
@@ -418,7 +428,7 @@ class NewsGenerationService
      */
     private function buildSourceContext(array $sources): string
     {
-        return collect($sources)
+        $contextString = collect($sources)
             ->take(4)
             ->map(function ($source, $index) {
                 $num = $index + 1;
@@ -427,6 +437,14 @@ class NewsGenerationService
                 $publishedAt = $this->enforceUtf8($source['published_at'] ?? '');
                 $rawContext = $source['content'] ?? $source['excerpt'] ?? $source['snippet'] ?? '';
                 $context = $this->truncateForPrompt($this->enforceUtf8($rawContext), 1200);
+
+                // Log the actual content being used
+                Log::info('Source context prepared', [
+                    'source_num' => $num,
+                    'title' => $title,
+                    'content_length' => mb_strlen($context),
+                    'content_preview' => mb_substr($context, 0, 100) . '...',
+                ]);
 
                 $lines = [
                     sprintf('=== সূত্র %d ===', $num),
@@ -443,6 +461,13 @@ class NewsGenerationService
                 return implode("\n", $lines);
             })
             ->implode("\n\n---\n\n");
+        
+        Log::info('Total source context built', [
+            'total_length' => mb_strlen($contextString),
+            'sources_count' => min(count($sources), 4),
+        ]);
+        
+        return $contextString;
     }
 
     /**
