@@ -30,8 +30,8 @@ class PollService
             $poll = Poll::create([
                 'user_id' => $user->id,
                 'question' => $data['question'],
-                'end_date' => Carbon::parse($data['end_date']),
-                'status' => 'active',
+                'end_date' => isset($data['end_date']) ? Carbon::parse($data['end_date']) : null,
+                'status' => $data['status'] ?? 'pending',
                 // uid auto-generated in model boot
             ]);
 

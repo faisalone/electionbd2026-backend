@@ -23,19 +23,22 @@ class PollController extends Controller
     /**
      * Display a listing of all polls (both active and ended).
      * Returns only 2 polls: latest active and latest ended.
+     * Excludes pending and rejected polls.
      */
     public function index()
     {
         $now = now();
         
-        // Get the latest active poll (end_date > now)
+        // Get the latest active poll (status=active, end_date > now)
         $activePoll = Poll::with(['options', 'user'])
+            ->where('status', 'active')
             ->where('end_date', '>', $now)
             ->latest()
             ->first();
         
-        // Get the latest ended poll (end_date <= now)
+        // Get the latest ended poll (status=active/ended, end_date <= now)
         $endedPoll = Poll::with(['options', 'user'])
+            ->whereIn('status', ['active', 'ended'])
             ->where('end_date', '<=', $now)
             ->latest()
             ->first();
@@ -95,13 +98,14 @@ class PollController extends Controller
 
     /**
      * Create a new poll (requires OTP verification).
+     * New polls are created with status=pending and no end_date.
      */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'question' => 'required|string|max:255',
             'creator_name' => 'nullable|string|max:255',
-            'end_date' => 'required|date|after:now',
+            'end_date' => 'nullable|date|after:now',
             'options' => 'required|array|min:2|max:5',
             'options.*.text' => 'required|string|max:255',
             'options.*.color' => 'nullable|string',
@@ -136,11 +140,12 @@ class PollController extends Controller
                 'question' => $request->question,
                 'end_date' => $request->end_date,
                 'options' => $request->options,
+                'status' => 'pending', // Always pending for user-created polls
             ], $user);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Poll created successfully',
+                'message' => 'Poll created successfully and pending approval',
                 'data' => $poll->load('options'),
             ], 201);
         } catch (\Exception $e) {

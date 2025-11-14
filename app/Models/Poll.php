@@ -109,12 +109,12 @@ class Poll extends Model
 
     public function isActive(): bool
     {
-        return $this->status === 'active' && $this->end_date->isFuture();
+        return $this->status === 'active' && $this->end_date && $this->end_date->isFuture();
     }
 
     public function hasEnded(): bool
     {
-        return $this->status === 'ended' || $this->end_date->isPast();
+        return $this->status === 'ended' || ($this->end_date && $this->end_date->isPast());
     }
 
     protected static function boot()

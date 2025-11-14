@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('uid', 16)->unique()->nullable();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Creator
             $table->text('question'); // Poll question
-            $table->dateTime('end_date'); // Poll end date and time
-            $table->enum('status', ['active', 'ended'])->default('active');
+            $table->dateTime('end_date')->nullable(); // Poll end date and time
+            $table->enum('status', ['pending', 'active', 'ended', 'rejected'])->default('active');
             // total_votes removed - calculated dynamically from poll_votes relationship
             $table->timestamps();
         });

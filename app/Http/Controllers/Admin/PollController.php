@@ -36,8 +36,12 @@ class PollController extends Controller
 
         $validator = Validator::make($request->all(), [
             'question' => 'sometimes|required|string',
-            'end_date' => 'sometimes|required|date',
-            'status' => 'sometimes|required|in:active,ended',
+            'end_date' => 'nullable|date',
+            'status' => 'sometimes|required|in:pending,active,ended,rejected',
+            'options' => 'sometimes|array|min:2|max:5',
+            'options.*.id' => 'sometimes|exists:poll_options,id',
+            'options.*.text' => 'required_with:options|string',
+            'options.*.color' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -47,12 +51,35 @@ class PollController extends Controller
             ], 422);
         }
 
+        // Update poll
         $poll->update($request->only(['question', 'end_date', 'status']));
+
+        // Update options if provided
+        if ($request->has('options')) {
+            foreach ($request->options as $optionData) {
+                if (isset($optionData['id'])) {
+                    // Update existing option
+                    $option = $poll->options()->find($optionData['id']);
+                    if ($option) {
+                        $option->update([
+                            'text' => $optionData['text'],
+                            'color' => $optionData['color'] ?? $option->color,
+                        ]);
+                    }
+                } else {
+                    // Create new option
+                    $poll->options()->create([
+                        'text' => $optionData['text'],
+                        'color' => $optionData['color'] ?? '#3b82f6',
+                    ]);
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Poll updated successfully',
-            'data' => $poll->fresh(),
+            'data' => $poll->fresh(['options']),
         ]);
     }
 
