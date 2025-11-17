@@ -73,9 +73,18 @@ class WhatsAppService
                 return true;
             }
 
+            // Get detailed error information
+            $errorData = $response->json();
+            $errorCode = $errorData['error']['code'] ?? null;
+            $errorMessage = $errorData['error']['message'] ?? 'Unknown error';
+            
+            // Log detailed error with helpful context
             Log::error('WhatsApp OTP sending failed', [
                 'phone' => $phoneNumber,
-                'response' => $response->json()
+                'error_code' => $errorCode,
+                'error_message' => $errorMessage,
+                'response' => $errorData,
+                'help' => $this->getErrorHelp($errorCode)
             ]);
             
             return false;
@@ -107,6 +116,23 @@ class WhatsAppService
         }
         
         return $phoneNumber;
+    }
+
+    /**
+     * Get helpful error message based on WhatsApp error code
+     */
+    private function getErrorHelp(?int $errorCode): string
+    {
+        return match($errorCode) {
+            132001 => 'Template "verification_code" not found. Create it in WhatsApp Manager > Message Templates.',
+            131031 => 'Template not approved yet. Wait for Meta approval or check template status.',
+            133010 => 'Recipient must send a message to your business number first, or complete business verification.',
+            190 => 'Access token invalid or expired. Regenerate system user token.',
+            100 => 'Invalid Phone Number ID. Verify in WhatsApp Manager settings.',
+            131047 => 'Template paused. Re-enable in WhatsApp Manager.',
+            131053 => 'Template deleted. Create a new template.',
+            default => 'Check WhatsApp Business API documentation for error code: ' . ($errorCode ?? 'Unknown')
+        };
     }
 
     /**
