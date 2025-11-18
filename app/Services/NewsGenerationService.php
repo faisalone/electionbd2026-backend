@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\News;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class NewsGenerationService
 {
@@ -548,12 +550,30 @@ PROMPT;
                 }
             }
 
+            // Generate image for the article
+            $imagePath = null;
+            try {
+                $imagePath = $this->generateImageForArticle($article);
+                if ($imagePath) {
+                    Log::info('Image generated successfully', [
+                        'title' => $article['title'],
+                        'image_path' => $imagePath,
+                    ]);
+                }
+            } catch (\Exception $imageException) {
+                Log::warning('Failed to generate image for article', [
+                    'title' => $article['title'],
+                    'error' => $imageException->getMessage(),
+                ]);
+                // Continue without image - it will use the default placeholder
+            }
+
             // Create news article
             $news = News::create([
                 'title' => $article['title'],
                 'summary' => $article['summary'],
                 'content' => $article['content'],
-                'image' => null, // Can be added later
+                'image' => $imagePath,
                 'date' => $article['date'],
                 'category' => $article['category'],
                 'is_ai_generated' => true,
@@ -565,6 +585,7 @@ PROMPT;
                 'message' => 'Article published successfully',
                 'uid' => $news->uid,
                 'id' => $news->id,
+                'image' => $imagePath ?? 'placeholder',
             ];
 
         } catch (\Exception $e) {
@@ -791,5 +812,162 @@ PROMPT;
     private function enforceUtf8(string $value): string
     {
         return mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+    }
+
+    /**
+     * Generate an image for the article using Gemini 2.5 Flash Image model.
+     * Returns the path to the saved image or null if generation fails.
+     */
+    private function generateImageForArticle(array $article): ?string
+    {
+        $apiKey = config('services.gemini.api_key');
+        
+        if (!$apiKey) {
+            Log::warning('Gemini API key not configured for image generation');
+            return null;
+        }
+
+        // Create a descriptive English prompt for the image
+        $imagePrompt = $this->createImagePromptFromArticle($article);
+        
+        Log::info('Generating image with Gemini 2.5 Flash Image', [
+            'title' => $article['title'],
+            'prompt' => $imagePrompt,
+        ]);
+
+        try {
+            // Use Gemini 2.5 Flash Image model for image generation
+            $model = 'gemini-2.5-flash-image';
+            
+            $response = Http::timeout(60)->post(
+                "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . $apiKey,
+                [
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => $imagePrompt]
+                            ]
+                        ]
+                    ],
+                    'generationConfig' => [
+                        'responseModalities' => ['Image'],
+                        'imageConfig' => [
+                            'aspectRatio' => '16:9', // Wide format for news
+                        ],
+                    ],
+                ]
+            );
+
+            if (!$response->successful()) {
+                Log::error('Gemini Image API error', [
+                    'status' => $response->status(),
+                    'response' => $response->body(),
+                    'title' => $article['title'],
+                ]);
+                return null;
+            }
+
+            $data = $response->json();
+            
+            // Get the image from the response (inline_data format)
+            if (!isset($data['candidates'][0]['content']['parts'][0]['inlineData'])) {
+                Log::error('No image data in Gemini response', ['response' => $data]);
+                return null;
+            }
+
+            $inlineData = $data['candidates'][0]['content']['parts'][0]['inlineData'];
+            $imageBytes = $inlineData['data'];
+            $mimeType = $inlineData['mimeType'] ?? 'image/png';
+            
+            // Decode base64 image
+            $imageData = base64_decode($imageBytes);
+            
+            if (!$imageData) {
+                Log::error('Failed to decode image bytes');
+                return null;
+            }
+
+            // Determine extension from mime type
+            $extension = match($mimeType) {
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/webp' => 'webp',
+                default => 'png',
+            };
+
+            // Generate unique filename
+            $filename = 'news_' . Str::random(20) . '_' . time() . '.' . $extension;
+            $path = 'news/' . $filename;
+            
+            // Ensure directory exists
+            $fullPath = storage_path('app/public/' . $path);
+            $directory = dirname($fullPath);
+            if (!is_dir($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            // Save image to storage
+            Storage::disk('public')->put($path, $imageData);
+            
+            // Return the public URL path
+            return '/storage/' . $path;
+
+        } catch (\Exception $e) {
+            Log::error('Error generating image with Gemini', [
+                'title' => $article['title'],
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Create an English image generation prompt from Bengali news article.
+     * Translates key concepts into descriptive English for Imagen.
+     */
+    private function createImagePromptFromArticle(array $article): string
+    {
+        $title = $article['title'] ?? '';
+        $summary = $article['summary'] ?? '';
+        $category = $article['category'] ?? 'নির্বাচন';
+
+        // Determine the subject based on category and content
+        $keywords = mb_strtolower($title . ' ' . $summary);
+        
+        // Common election/political imagery
+        if (str_contains($keywords, 'নির্বাচন') || str_contains($keywords, 'ভোট')) {
+            $basePrompt = 'A professional photojournalistic image of a Bangladesh election scene';
+            
+            if (str_contains($keywords, 'ভোট কেন্দ্র') || str_contains($keywords, 'ভোটকেন্দ্র')) {
+                $basePrompt .= ', showing voters at a polling station';
+            } elseif (str_contains($keywords, 'প্রচার') || str_contains($keywords, 'সভা')) {
+                $basePrompt .= ', showing an election rally or campaign event';
+            } elseif (str_contains($keywords, 'প্রার্থী')) {
+                $basePrompt .= ', showing election candidates and supporters';
+            } else {
+                $basePrompt .= ', with ballot boxes and voting activity';
+            }
+        } elseif (str_contains($keywords, 'দল') || str_contains($keywords, 'রাজনৈতিক')) {
+            $basePrompt = 'A professional photojournalistic image of a political party event in Bangladesh';
+            
+            if (str_contains($keywords, 'সভা')) {
+                $basePrompt .= ', showing a large political gathering';
+            } else {
+                $basePrompt .= ', with party flags and supporters';
+            }
+        } elseif (str_contains($keywords, 'সরকার') || str_contains($keywords, 'মন্ত্রী')) {
+            $basePrompt = 'A professional photojournalistic image of government officials in Bangladesh';
+        } else {
+            // Default election scene
+            $basePrompt = 'A professional photojournalistic image of Bangladesh election 2026 preparations';
+        }
+
+        // Add style and quality modifiers
+        $basePrompt .= ', documentary photography style, high quality, HDR, realistic, photorealistic, ';
+        $basePrompt .= 'professional journalism, news photography, wide angle, natural lighting, ';
+        $basePrompt .= 'depicting current political events in Bangladesh';
+
+        return $basePrompt;
     }
 }
