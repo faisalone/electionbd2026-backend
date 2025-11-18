@@ -924,7 +924,8 @@ PROMPT;
 
     /**
      * Create an English image generation prompt from Bengali news article.
-     * Translates key concepts into descriptive English for Imagen.
+     * Translates key concepts into descriptive English for image generation.
+     * Explicitly avoids text in images.
      */
     private function createImagePromptFromArticle(array $article): string
     {
@@ -963,10 +964,12 @@ PROMPT;
             $basePrompt = 'A professional photojournalistic image of Bangladesh election 2026 preparations';
         }
 
-        // Add style and quality modifiers
+        // Add style and quality modifiers - EXPLICITLY NO TEXT
         $basePrompt .= ', documentary photography style, high quality, HDR, realistic, photorealistic, ';
         $basePrompt .= 'professional journalism, news photography, wide angle, natural lighting, ';
-        $basePrompt .= 'depicting current political events in Bangladesh';
+        $basePrompt .= 'depicting current political events in Bangladesh. ';
+        $basePrompt .= 'DO NOT include any text, words, letters, numbers, or writing in the image. ';
+        $basePrompt .= 'Clean image without any text overlays or captions.';
 
         return $basePrompt;
     }
