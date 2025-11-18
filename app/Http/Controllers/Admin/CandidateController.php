@@ -14,17 +14,64 @@ class CandidateController extends Controller
     {
         $query = Candidate::with(['party.symbol', 'seat.district.division', 'symbol']);
 
-        if ($request->has('seat_id')) {
+        // Search by name (both Bengali and English)
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('name_en', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Filter by seat
+        if ($request->has('seat_id') && $request->seat_id) {
             $query->where('seat_id', $request->seat_id);
         }
 
-        if ($request->has('party_id')) {
+        // Filter by party
+        if ($request->has('party_id') && $request->party_id) {
             $query->where('party_id', $request->party_id);
+        }
+
+        // Filter by district
+        if ($request->has('district_id') && $request->district_id) {
+            $query->whereHas('seat', function($q) use ($request) {
+                $q->where('district_id', $request->district_id);
+            });
+        }
+
+        // Filter by division
+        if ($request->has('division_id') && $request->division_id) {
+            $query->whereHas('seat.district', function($q) use ($request) {
+                $q->where('division_id', $request->division_id);
+            });
         }
 
         // Filter for independent candidates (no party_id)
         if ($request->has('is_independent') && $request->is_independent) {
             $query->whereNull('party_id');
+        }
+
+        // Order by name
+        $query->orderBy('name', 'asc');
+
+        // Pagination support
+        if ($request->has('per_page')) {
+            $perPage = min((int)$request->per_page, 100); // Max 100 per page
+            $candidates = $query->paginate($perPage);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $candidates->items(),
+                'pagination' => [
+                    'total' => $candidates->total(),
+                    'per_page' => $candidates->perPage(),
+                    'current_page' => $candidates->currentPage(),
+                    'last_page' => $candidates->lastPage(),
+                    'from' => $candidates->firstItem(),
+                    'to' => $candidates->lastItem(),
+                ],
+            ]);
         }
 
         $candidates = $query->get();
@@ -39,12 +86,12 @@ class CandidateController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'name_en' => 'required|string|max:255',
+            'name_en' => 'nullable|string|max:255',
             'party_id' => 'nullable|exists:parties,id',
             'seat_id' => 'required|exists:seats,id',
             'symbol_id' => 'nullable|exists:symbols,id',
-            'age' => 'required|integer|min:25',
-            'education' => 'required|string|max:255',
+            'age' => 'nullable|integer|min:25',
+            'education' => 'nullable|string|max:255',
             'experience' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
@@ -111,12 +158,12 @@ class CandidateController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
-            'name_en' => 'sometimes|required|string|max:255',
+            'name_en' => 'nullable|string|max:255',
             'party_id' => 'nullable|exists:parties,id',
             'seat_id' => 'sometimes|required|exists:seats,id',
             'symbol_id' => 'nullable|exists:symbols,id',
-            'age' => 'sometimes|required|integer|min:25',
-            'education' => 'sometimes|required|string|max:255',
+            'age' => 'nullable|integer|min:25',
+            'education' => 'nullable|string|max:255',
             'experience' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);

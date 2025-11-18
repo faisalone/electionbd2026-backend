@@ -14,12 +14,12 @@ return new class extends Migration
         Schema::create('candidates', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // Bengali name
-            $table->string('name_en'); // English name
+            $table->string('name_en')->nullable(); // English name
             $table->foreignId('party_id')->nullable()->constrained()->onDelete('cascade'); // Nullable for independents
             $table->foreignId('seat_id')->constrained()->onDelete('cascade');
             $table->foreignId('symbol_id')->nullable()->constrained()->onDelete('set null'); // For independent candidates only
-            $table->integer('age');
-            $table->string('education');
+            $table->integer('age')->nullable();
+            $table->string('education')->nullable();
             $table->text('experience')->nullable();
             $table->string('image')->nullable();
             $table->timestamps();
