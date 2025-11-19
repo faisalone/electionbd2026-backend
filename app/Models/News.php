@@ -25,11 +25,11 @@ class News extends Model
     ];
 
     /**
-     * Get the image URL with fallback to placeholder.
+     * Get the image URL - return null if not available so frontend can use default.
      */
-    public function getImageAttribute($value): string
+    public function getImageAttribute($value): ?string
     {
-        return $value ?? '/news-placeholder.svg';
+        return $value;
     }
 
     public function scopeAiGenerated($query)
