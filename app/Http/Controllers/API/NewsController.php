@@ -66,22 +66,22 @@ class NewsController extends Controller
     public function show(News $news)
     {
         // Return model directly to get accessors (image fallback)
-        // Only load necessary fields to optimize performance
+        // Access image property to trigger accessor before converting to array
         return response()->json([
             'success' => true,
-            'data' => $news->only([
-                'id',
-                'uid',
-                'title',
-                'summary',
-                'content',
-                'image',
-                'date',
-                'category',
-                'is_ai_generated',
-                'created_at',
-                'updated_at'
-            ]),
+            'data' => [
+                'id' => $news->id,
+                'uid' => $news->uid,
+                'title' => $news->title,
+                'summary' => $news->summary,
+                'content' => $news->content,
+                'image' => $news->image, // Triggers accessor
+                'date' => $news->date,
+                'category' => $news->category,
+                'is_ai_generated' => $news->is_ai_generated,
+                'created_at' => $news->created_at,
+                'updated_at' => $news->updated_at,
+            ],
         ]);
     }
 
