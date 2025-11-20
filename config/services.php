@@ -65,6 +65,13 @@ return [
         'search_engine_id' => env('GOOGLE_SEARCH_ENGINE_ID'),
     ],
 
+    'google_cloud' => [
+        'project_id' => env('GOOGLE_CLOUD_PROJECT_ID', '923148411282'),
+        'location' => env('GOOGLE_CLOUD_LOCATION', 'global'),
+        'datastore_id' => env('GOOGLE_CLOUD_DATASTORE_ID', 'bd26-election-agent_1763640025270'),
+        'service_account_path' => env('GOOGLE_CLOUD_SERVICE_ACCOUNT_PATH', storage_path('app/google-cloud-key.json')),
+    ],
+
     'stability_ai' => [
         'api_key' => env('STABILITY_AI_API_KEY'),
     ],

@@ -60,11 +60,30 @@ class AiSearchController extends Controller
             // Phase 1: AI analyzes query and creates search strategy
             $searchPlan = $this->analyzeQueryWithAi($query);
             
+            // Enhancement: Force include conduct_rules for relevant queries
+            if ($this->isConductRuleQuery($query)) {
+                $searchPlan['search_tables'][] = 'conduct_rules';
+                $searchPlan['search_tables'] = array_unique($searchPlan['search_tables']);
+                if (!in_array('নির্বাচনী আচরণবিধি', $searchPlan['topics'] ?? [])) {
+                    $searchPlan['topics'][] = 'নির্বাচনী আচরণবিধি';
+                }
+            }
+            
             // Phase 2: Execute intelligent search based on AI's understanding
             $results = $this->executeIntelligentSearch($query, $searchPlan);
             
             // Phase 3: AI generates conversational response
-            $aiResponse = $this->generateIntelligentResponse($query, $searchPlan, $results);
+            // Check if Vertex AI summary is available for conduct rules
+            $vertexSummary = null;
+            if (isset($results['conduct_rules']) && count($results['conduct_rules']) > 0) {
+                $firstRule = $results['conduct_rules']->first();
+                if ($firstRule && isset($firstRule->summary) && !empty($firstRule->summary)) {
+                    $vertexSummary = $firstRule->summary;
+                }
+            }
+            
+            // Use Vertex AI summary if available, otherwise generate response
+            $aiResponse = $vertexSummary ?? $this->generateIntelligentResponse($query, $searchPlan, $results);
             
             return response()->json([
                 'success' => true,
@@ -234,6 +253,76 @@ class AiSearchController extends Controller
     }
 
     /**
+     * Check if query is about code of conduct
+     */
+    private function isConductRuleQuery(string $query): bool
+    {
+        $conductKeywords = [
+            // Core terms
+            'আচরণবিধি', 'নিষিদ্ধ', 'অনুমোদিত', 'করা যাবে', 'করা যাবে না', 
+            'নিয়ম', 'বিধি', 'শাস্তি', 'দায়িত্ব', 'নিষেধ', 'বারণ',
+            'পারবে না', 'পারবে', 'করতে পারি', 'সীমাবদ্ধ', 'সীমা',
+            
+            // Campaigning materials  
+            'পোস্টার', 'মাইক', 'লাউডস্পিকার', 'ব্যানার', 'ফেস্টুন', 'দেয়াল', 
+            'লিফলেট', 'হ্যান্ডবিল', 'বিলবোর্ড', 'প্যান্ডেল', 'গেইট', 'তোরণ',
+            'আলোকসজ্জা', 'ভোটার স্লিপ',
+            
+            // Campaigning activities
+            'প্রচার', 'প্রচারণা', 'জনসভা', 'মিছিল', 'শোডাউন', 'পথসভা', 
+            'সমাবেশ', 'মশাল মিছিল', 'শোভাযাত্রা',
+            
+            // Prohibited activities
+            'ঘুষ', 'হুমকি', 'প্রলোভন', 'মিথ্যা', 'অস্ত্র', 'বিস্ফোরক',
+            'ভয়ভীতি', 'জবরদস্তি', 'বলপ্রয়োগ', 'সহিংসতা', 'উস্কানিমূলক',
+            
+            // Sensitive topics
+            'ধর্ম', 'বর্ণ', 'জাতি', 'সাম্প্রদায়িক', 'সম্প্রদায়', 'বিভেদ',
+            'কুৎসা', 'মানহানিকর', 'অশ্লীল', 'চরিত্র হনন', 'ধর্মানুভূতি',
+            'লিঙ্গ', 'আক্রমণাত্মক', 'তিক্ত', 'বিভ্রান্তিকর', 'ঘৃণাত্মক',
+            
+            // Resources and facilities
+            'সরকারি সম্পদ', 'যানবাহন', 'অনুদান', 'চাঁদা', 'বরাদ্দ', 'উপটৌকন',
+            'সার্কিট হাউজ', 'ডাক-বাংলো', 'রেস্ট হাউজ', 'সংবর্ধনা',
+            'হেলিকপ্টার', 'ড্রোন', 'কোয়াডকপ্টার', 'আকাশযান',
+            
+            // Vehicles
+            'বাস', 'ট্রাক', 'রিক্সা', 'অটোরিক্সা', 'মোটরসাইকেল', 'নৌযান',
+            
+            // Places
+            'মসজিদ', 'মন্দির', 'গির্জা', 'ক্যায়াং', 'প্যাগোডা', 'উপাসনালয়',
+            'ভোটকেন্দ্র', '৪০০ গজ', 'শিক্ষা প্রতিষ্ঠান',
+            
+            // Time limits
+            'ডেসিবেল', 'দুপুর', 'রাত', '৪৮ ঘন্টা', 'শান্তি সময়', 'cooling period',
+            '২৪ ঘণ্টা', '৩ সপ্তাহ',
+            
+            // Digital/AI
+            'AI', 'কৃত্রিম বুদ্ধিমত্তা', 'ডিপফেক', 'deepfake', 'সামাজিক মাধ্যম',
+            'সামাজিক যোগাযোগ', 'ফেসবুক', 'content', 'কনটেন্ট',
+            
+            // Governance
+            'মনোনয়নপত্র', 'রিটার্নিং অফিসার', 'নির্বাচন কমিশন',
+            'প্রার্থী', 'রাজনৈতিক দল', 'সমর্থক', 'কর্মী',
+            
+            // Animals & misc
+            'জীবন্ত প্রাণী', 'দেয়াল লিখন', 'অপচনশীল', 'প্লাস্টিক', 'পলিথিন',
+            'প্রতিষ্ঠান', 'প্রকল্প', 'নির্বাচনি ক্যাম্প',
+            
+            // English
+            'code of conduct', 'election rule', 'campaign', 'prohibited', 'allowed'
+        ];
+        
+        foreach ($conductKeywords as $keyword) {
+            if (mb_stripos($query, $keyword) !== false) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
      * Phase 1: AI analyzes the query and creates a search strategy
      */
     private function analyzeQueryWithAi(string $query): array
@@ -290,6 +379,7 @@ Database Tables Available (use exact names in search_tables):
 4. **polls** - Public opinion polls and predictions
 5. **seats** - Electoral constituencies
 6. **timeline_events** - Election schedule, dates, and timeline (IMPORTANT: use "timeline_events" not "timeline")
+7. **conduct_rules** - নির্বাচনী আচরণবিধি (Election Code of Conduct) - rules about what is allowed/prohibited during election
 
 User Query (in Bengali): "{$query}"
 
@@ -298,13 +388,15 @@ Analyze this query and respond in JSON format:
 {
   "thinking": "বিষয় বিশ্লেষণ করছি... [brief user-friendly analysis in Bengali - no technical terms, no table names, just what the user is asking about]",
   "topics": ["topic1", "topic2"],
-  "search_tables": ["candidates", "parties", "news", "polls", "seats", "timeline_events"],
+  "search_tables": ["candidates", "parties", "news", "polls", "seats", "timeline_events", "conduct_rules"],
   "search_terms": ["term1", "term2"],
   "query_type": "specific_info|general_question|comparison|list"
 }
 ```
 
 CRITICAL: Use EXACT table names from the list above in "search_tables" field!
+
+IMPORTANT: If the query is about নির্বাচনী আচরণবিধি, code of conduct, what is allowed/prohibited, rules, কি করা যাবে, কি করা যাবে না, নিষিদ্ধ, অনুমোদিত, etc. - MUST include "conduct_rules" in search_tables.
 
 IMPORTANT for "thinking" field:
 - Write in Bengali (বাংলা)
@@ -316,6 +408,7 @@ IMPORTANT for "thinking" field:
   * Good: "আপনি আওয়ামী লীগ সম্পর্কে জানতে চাচ্ছেন..."
   * Good: "ঢাকা-১ আসনের প্রার্থীদের তথ্য খুঁজছি..."
   * Good: "নির্বাচনের তারিখ সম্পর্কে তথ্য দেখছি..."
+  * Good: "নির্বাচনী আচরণবিধি সম্পর্কে তথ্য দেখছি..."
   * Bad: "Searching parties table for party info"
   * Bad: "Querying timeline_events table"
 
@@ -323,6 +416,7 @@ Examples:
 - Query: "আওয়ামী লীগ" → thinking: "আপনি আওয়ামী লীগ সম্পর্কে জানতে চাচ্ছেন..."
 - Query: "ঢাকা-১" → thinking: "ঢাকা-১ আসনের প্রার্থীদের তথ্য খুঁজছি..."
 - Query: "নির্বাচন কবে?" → thinking: "নির্বাচনের সময়সূচী সম্পর্কে তথ্য দেখছি..."
+- Query: "কি করা যাবে না?" → thinking: "নির্বাচনী আচরণবিধি সম্পর্কে তথ্য দেখছি..."
 
 Respond ONLY with valid JSON.
 PROMPT;
@@ -378,6 +472,11 @@ PROMPT;
             $searchTables[] = 'polls';
             $topics[] = 'জনমত জরিপ';
         }
+        // Check for conduct rules (আচরণবিধি) queries
+        if (preg_match('/(আচরণবিধি|নিষিদ্ধ|অনুমোদিত|করা যাবে|করা যাবে না|নিয়ম|বিধি|পোস্টার|মাইক|প্রচার|ঘুষ|হুমকি)/u', $query)) {
+            $searchTables[] = 'conduct_rules';
+            $topics[] = 'নির্বাচনী আচরণবিধি';
+        }
         
         // If no specific match, search all
         if (empty($searchTables)) {
@@ -420,6 +519,9 @@ PROMPT;
                     break;
                 case 'timeline_events':
                     $results['timeline'] = $this->searchTimeline($query);
+                    break;
+                case 'conduct_rules':
+                    $results['conduct_rules'] = $this->searchConductRules($query);
                     break;
             }
         }
@@ -514,6 +616,43 @@ PROMPT;
             ->orderBy('order')
             ->limit(5)
             ->get();
+    }
+
+    /**
+     * Search conduct rules (আচরণবিধি) intelligently
+     */
+    private function searchConductRules(string $query)
+    {
+        // Use Vertex AI Agent for conduct rules
+        try {
+            $vertexAi = app(\App\Services\VertexAiAgentService::class);
+            
+            if ($vertexAi->isAvailable()) {
+                $results = $vertexAi->searchConductRules($query, 10);
+                
+                if ($results && isset($results['documents']) && count($results['documents']) > 0) {
+                    // Convert Vertex AI format to collection
+                    $conductRules = collect($results['documents'])->map(function($doc) use ($results) {
+                        return (object)[
+                            'title' => $doc['title'] ?? 'নির্বাচনী আচরণবিধি',
+                            'description' => $doc['snippet'] ?? $doc['content'] ?? '',
+                            'summary' => $results['summary'] ?? null,
+                            'category' => 'নিষিদ্ধ',
+                            'rule_number' => '',
+                            'keywords' => '',
+                        ];
+                    });
+                    
+                    Log::info('Vertex AI Agent returned conduct rules', ['count' => $conductRules->count()]);
+                    return $conductRules;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Vertex AI search error: ' . $e->getMessage());
+        }
+        
+        // Return empty collection if Vertex AI fails
+        return collect();
     }
 
     /**
@@ -667,6 +806,23 @@ PROMPT;
                     $list[] = "- {$p->question} (মোট ভোট: {$p->total_votes})";
                 }
                 return "জনমত জরিপ (" . count($data) . " টি):\n" . implode("\n", $list);
+            
+            case 'conduct_rules':
+                $list = [];
+                foreach ($data as $rule) {
+                    $category = $rule->category;
+                    $icon = match($category) {
+                        'নিষিদ্ধ' => '🚫',
+                        'অনুমোদিত' => '✅',
+                        'নির্বাচনের দিন' => '📅',
+                        'প্রার্থীর দায়িত্ব' => '👤',
+                        'দলের দায়িত্ব' => '🏛️',
+                        'শাস্তি' => '⚖️',
+                        default => '📋'
+                    };
+                    $list[] = "{$icon} {$rule->title}\n  {$rule->description}";
+                }
+                return "নির্বাচনী আচরণবিধি (" . count($data) . " টি নিয়ম):\n" . implode("\n\n", $list);
                 
             default:
                 return "";
@@ -691,7 +847,8 @@ PROMPT;
                     'news' => 'খবর',
                     'seats' => 'আসন',
                     'polls' => 'জনমত জরিপ',
-                    'timeline' => 'সময়সূচী'
+                    'timeline' => 'সময়সূচী',
+                    'conduct_rules' => 'আচরণবিধি নিয়ম'
                 ];
                 $summary[] = "{$count} টি {$typeNames[$type]}";
             }
